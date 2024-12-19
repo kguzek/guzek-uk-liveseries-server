@@ -10,3 +10,4 @@ dist
 
 # Shell scripts
 *.sh
+!convert-to-mp4.sh
