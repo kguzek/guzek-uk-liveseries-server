@@ -27,6 +27,7 @@ const ENDPOINTS = [
 
 /** Initialises the HTTP RESTful API server. */
 async function initialise() {
+  app.set("trust proxy", 1);
   app.use(getMiddleware());
   app.use(whitelistMiddleware);
 
