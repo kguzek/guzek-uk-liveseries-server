@@ -19,16 +19,17 @@ If you want to do it manually, here are the steps:
 3. Run the SQL scripts provided in `scripts`, in the order specified in `scripts/README.md`
 4. Store the credentials to your database + user in `.env`, following the template in `template.env`
 5. Download & install [Transmission](https://transmissionbt.com/download)
-6. Create a username and password for the Transmission daemon and also store it in `.env`
-7. Optional (for automatic subtitle downloading): create an account at `opensubtitles.com` and [create a developer API consumer](https://www.opensubtitles.com/en/consumers)
-8. ... Store your OpenSubtitles API key in `.env` as `SUBTITLES_API_KEY_DEV`, I haven't figured out how to use the production keys yet (ignore the other SUBTITLES_API_* fields)
-9. Install the project dependencies: `npm install`
-10. Transpile the TypeScript code into JavaScript: `npm run compile`
-11. Optional: remove the [`--max-old-space-size=192`](https://stackoverflow.com/questions/48387040/how-do-i-determine-the-correct-max-old-space-size-for-node-js) from `package.json` (for more performance)
-12. Run the server: `npm run prod`
-13. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port 5021 to whatever external port you choose)
-14. Add the URL of your server to your Guzek UK profile (for running on the same machine you can use an address like `http://10.0.0.10:5021`)
-15. Add your user UUID to `whitelist.json`, which can be found at your Guzek UK profile -- nobody else will be able to access your server!
+6. Create a username and password for the Transmission daemon and also store it in `.env` (Transmission settings.json field `"rpc-password"`)
+7. Add `convert-to-mp4.sh` as a torrent-done script for Transmission, so that the `.mkv` videos are streamable through a web browser (Transmission settings.json fields `"script-torrent-done-enabled": true` and `"script-torrent-done-filename": "/path/to/convert-to-mp4.sh"`)
+8. Optional (for automatic subtitle downloading): create an account at `opensubtitles.com` and [create a developer API consumer](https://www.opensubtitles.com/en/consumers)
+9. ... Store your OpenSubtitles API key in `.env` as `SUBTITLES_API_KEY_DEV`, I haven't figured out how to use the production keys yet (ignore the other `SUBTITLES_API_*` fields)
+10. Install the project dependencies: `npm install`
+11. Transpile the TypeScript code into JavaScript: `npm run compile`
+12. Optional: remove the [`--max-old-space-size=192`](https://stackoverflow.com/questions/48387040/how-do-i-determine-the-correct-max-old-space-size-for-node-js) from `package.json` (for more performance)
+13. Run the server: `npm run prod`
+14. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port 5021 to whatever external port you choose)
+15. Add the URL of your server to your Guzek UK profile (for running on the same machine you can use an address like `http://10.0.0.10:5021`)
+16. Add your user UUID to `whitelist.json`, which can be found at your Guzek UK profile -- nobody else will be able to access your server!
 
 ## Usage
 
