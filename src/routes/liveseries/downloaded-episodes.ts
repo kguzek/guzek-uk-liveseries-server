@@ -86,7 +86,7 @@ async function downloadEpisode(tvShow: TvShow, episode: Episode) {
 }
 
 // START downloading episode
-router.post("/downloaded-episodes", async (req, res) => {
+router.post("/", async (req, res) => {
   const tvShow: TvShow = req.body.tvShow;
   const episode: Episode = req.body.episode;
 
@@ -110,7 +110,7 @@ router.post("/downloaded-episodes", async (req, res) => {
 });
 
 // GET all downloaded episodes
-router.ws("/downloaded-episodes/ws", (ws, req) => {
+router.ws("/ws", (ws, req) => {
   if (!torrentClient) {
     logger.error(
       "Websocket connection established without active torrent client."
