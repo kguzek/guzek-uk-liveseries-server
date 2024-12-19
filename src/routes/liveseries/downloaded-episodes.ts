@@ -2,6 +2,8 @@ import express from "express";
 import expressWs from "express-ws";
 import { getLogger } from "guzek-uk-common/logger";
 import {
+  BasicEpisode,
+  BasicTvShow,
   ConvertedTorrentInfo,
   DownloadStatus,
   Episode,
@@ -37,23 +39,16 @@ export function sendWebsocketMessage() {
     callback();
   }
 }
-async function tryDownloadEpisode(tvShow: TvShow, episode: Episode) {
-  const result = await DownloadedEpisode.findOne({
-    where: {
-      showId: tvShow.id,
-      episode: episode.episode,
-      season: episode.season,
-    },
-  });
+
+async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
+  const { showName, ...where } = data;
+  const result = await DownloadedEpisode.findOne({ where });
   logger.debug("Result is: " + result);
-  return result ? null : await downloadEpisode(tvShow, episode);
+  return result ? null : await downloadEpisode(data);
 }
 
-async function downloadEpisode(tvShow: TvShow, episode: Episode) {
-  const result = await torrentIndexer.findTopResult({
-    ...episode,
-    showName: tvShow.name,
-  });
+async function downloadEpisode(data: BasicTvShow & BasicEpisode) {
+  const result = await torrentIndexer.findTopResult(data);
   if (!result || !result.link) {
     logger.error(
       "Search query turned up empty. Either no torrents available, or indexer is outdated."
@@ -61,13 +56,7 @@ async function downloadEpisode(tvShow: TvShow, episode: Episode) {
     return null;
   }
 
-  const createEntry = () =>
-    DownloadedEpisode.create({
-      showId: tvShow.id,
-      showName: tvShow.name,
-      episode: episode.episode,
-      season: episode.season,
-    });
+  const createEntry = () => DownloadedEpisode.create({ ...data });
   let torrentInfo: Awaited<ReturnType<TorrentClient["addTorrent"]>>;
   try {
     torrentInfo = await torrentClient.addTorrent(result.link, createEntry);
@@ -87,23 +76,30 @@ async function downloadEpisode(tvShow: TvShow, episode: Episode) {
 
 // START downloading episode
 router.post("/", async (req, res) => {
-  const tvShow: TvShow = req.body.tvShow;
-  const episode: Episode = req.body.episode;
+  const showName = req.body?.showName;
+  const showId = req.body?.showId;
+  const season = req.body?.season;
+  const episode = req.body?.episode;
 
   const errorMessage =
-    validateNaturalNumber(tvShow?.id) ??
-    validateNaturalNumber(episode.season) ??
-    validateNaturalNumber(episode.episode) ??
-    tvShow.name
+    validateNaturalNumber(showId) ??
+    validateNaturalNumber(season) ??
+    validateNaturalNumber(episode) ??
+    showName
       ? null
-      : "Request body `tvShow` object is missing property `name`.";
+      : "Request body is missing property `showName`.";
 
   if (errorMessage) return sendError(res, 400, { message: errorMessage });
 
-  const downloadedEpisode = await tryDownloadEpisode(tvShow, episode);
+  const downloadedEpisode = await tryDownloadEpisode({
+    showName,
+    showId,
+    episode,
+    season,
+  });
   if (downloadedEpisode) return sendOK(res, downloadedEpisode);
   sendError(res, 400, {
-    message: `Invalid TV show '${tvShow.name}' or episode '${serialiseEpisode(
+    message: `Invalid TV show '${showName}' or episode '${serialiseEpisode(
       episode
     )}', or it is already downloaded.`,
   });
