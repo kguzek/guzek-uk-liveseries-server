@@ -8,7 +8,7 @@ import {
   handleTorrentRequest,
   searchForDownloadedEpisode,
   torrentClient,
-} from "../../util";
+} from "../../liveseries";
 import { sendWebsocketMessage } from "./downloaded-episodes";
 
 export const router = express.Router();

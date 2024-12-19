@@ -8,26 +8,24 @@ import {
 } from "guzek-uk-common/models";
 import { convertTorrentInfo } from "guzek-uk-common/util";
 
-// const API_URL = "https://transmission.guzek.uk/transmission/rpc";
 const SESSION_ID_HEADER_NAME = "X-Transmission-Session-Id";
 const SESSION_ID_PATTERN = /<code>X-Transmission-Session-Id: (.+)<\/code>/;
-// ETA: Estimated download duration in seconds (/60 for minutes)
-// leftUntilDone: Estimated download duration in microseconds (/1000 /1000 /60 for minutes)
 const FIELDS = [
   "id",
   "name",
   "status",
   "rateDownload",
   "percentDone",
+  // leftUntilDone: Estimated download duration in microseconds (/1000 /1000 /60 for minutes)
   "leftUntilDone",
+  // ETA: Estimated download duration in seconds (/60 for minutes)
   "eta",
 ];
 /** The free space required for new torrents to be downloaded. Default: 1 GiB. */
 const MIN_REQUIRED_KEBIBYTES = 1048576;
 
 const TRANSMISSION_URL =
-  process.env.TRANSMISSION_URL ??
-  "https://transmission.guzek.uk/transmission/rpc";
+  process.env.TRANSMISSION_URL ?? "http://localhost:9091/transmission/rpc";
 
 const logger = getLogger(__filename);
 
@@ -86,13 +84,23 @@ export class TorrentClient {
     this.numTorrents = resSessionStats.arguments.torrentCount;
   }
 
+  /**
+   * Optionally waits for the torrent client to initialise, so that errors can be caught. Note that this is not necessary,
+   * as the client will wait for initialisation itself before sending any requests. However, if the client encounters an
+   * error during initialisation and this method isn't called, the error will not be caught and may propagate into stderr.
+   * @returns a boolean indicating if the client was in the process of initialising.
+   */
+  async waitForInitialisation() {
+    if (this.initPromise == null) return false;
+    await this.initPromise;
+    return true;
+  }
+
   private async fetch<T extends Method>(
     method: T,
     ...[args]: T extends ExemptMethod ? [] : [args: Record<string, any>]
   ): Promise<TorrentResponse<T>> {
-    if (this.initPromise != null && !method.startsWith("session")) {
-      // Wait until the client has completed initialisation
-      await this.initPromise;
+    if (!method.startsWith("session") && (await this.waitForInitialisation())) {
       this.initPromise = null;
     }
 
@@ -111,7 +119,7 @@ export class TorrentClient {
     } catch (error) {
       res = (error as AxiosError).response;
       if (!res) {
-        logger.error("Could not obtain a response from the torrent client.");
+        logger.error("Could not obtain a response from the torrent daemon.");
         throw error;
       }
       if (method !== "session-get") {

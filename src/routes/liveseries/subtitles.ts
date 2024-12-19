@@ -17,7 +17,10 @@ import {
   sendError,
   setCacheControl,
 } from "guzek-uk-common/util";
-import { handleTorrentRequest, searchForDownloadedEpisode } from "../../util";
+import {
+  handleTorrentRequest,
+  searchForDownloadedEpisode,
+} from "../../liveseries";
 
 export const router = express.Router();
 

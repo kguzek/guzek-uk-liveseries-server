@@ -6,6 +6,7 @@ import { startServer } from "guzek-uk-common/util";
 import { getLogger } from "guzek-uk-common/logger";
 import { getMiddleware } from "guzek-uk-common/middleware";
 import { whitelistMiddleware } from "./src/middleware/whitelist";
+import { initialiseTorrentClient } from "./src/liveseries";
 
 const logger = getLogger(__filename);
 
@@ -37,6 +38,7 @@ async function initialise() {
   }
 
   startServer(app, PORT);
+  initialiseTorrentClient();
 }
 
 if (PORT) {

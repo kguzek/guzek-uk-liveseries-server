@@ -84,7 +84,7 @@ export async function handleTorrentRequest(
     torrent = await torrentClient.getTorrentInfo(basicEpisode);
   } catch (error) {
     logger.error(error);
-    return sendError(res, 500, {
+    return sendError(res, 503, {
       message: "Could not obtain the current torrent list. Try again later.",
     });
   }
@@ -112,10 +112,23 @@ export async function handleTorrentRequest(
   callback(torrent, { showName: sanitised, season, episode });
 }
 
-export function initialiseTorrentClient() {
+export async function initialiseTorrentClient() {
   torrentClient = new TorrentClient();
+  try {
+    await torrentClient.waitForInitialisation();
+  } catch (error) {
+    logger.error("Initialisation failure: " + (error as Error).message);
+    logger.warn(
+      "Ensure that your transmission client is running and that the configuration of `.env` is correct."
+    );
+    logger.warn(
+      "The server is operational, but torrent-related requests will fail with HTTP status 503."
+    );
+    return;
+  }
   if (!torrentClient) {
     logger.error("Failed to initialise the torrent client.");
     return;
   }
+  logger.info("Torrent client initialised successfully.");
 }

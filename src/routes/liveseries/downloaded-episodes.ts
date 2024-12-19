@@ -16,7 +16,7 @@ import {
 } from "guzek-uk-common/util";
 import { TorrentIndexer } from "../../torrentIndexers/torrentIndexer";
 import { Eztv } from "../../torrentIndexers/eztv";
-import { torrentClient } from "../../util";
+import { torrentClient } from "../../liveseries";
 import { TorrentClient } from "../../torrentClient";
 
 export const router = express.Router() as expressWs.Router;
