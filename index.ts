@@ -2,7 +2,7 @@ import express from "express";
 import expressWs from "express-ws";
 import { setupEnvironment } from "guzek-uk-common/setup";
 const DEBUG_MODE = setupEnvironment(true);
-import { getServerPort, startServer } from "guzek-uk-common/util";
+import { startServer } from "guzek-uk-common/server";
 import { getMiddleware } from "guzek-uk-common/middleware";
 import { getWhitelistMiddleware } from "./src/middleware/whitelist";
 import { initialiseTorrentClient } from "./src/liveseries";
@@ -21,9 +21,6 @@ const ENDPOINTS = [
 
 /** Initialises the HTTP RESTful API server. */
 async function initialise() {
-  const port = getServerPort();
-  if (!port) return;
-
   app.set("trust proxy", 1);
   app.use(getMiddleware());
   app.use(getWhitelistMiddleware(DEBUG_MODE));
@@ -35,7 +32,7 @@ async function initialise() {
     app.use("/" + endpoint, middleware.router);
   }
 
-  startServer(app, port);
+  startServer(app);
   initialiseTorrentClient();
 }
 
