@@ -1,21 +1,15 @@
 import express from "express";
 import expressWs from "express-ws";
 import { setupEnvironment } from "guzek-uk-common/setup";
-setupEnvironment(true);
-import { startServer } from "guzek-uk-common/util";
-import { getLogger } from "guzek-uk-common/logger";
+const DEBUG_MODE = setupEnvironment(true);
+import { getServerPort, startServer } from "guzek-uk-common/util";
 import { getMiddleware } from "guzek-uk-common/middleware";
-import { whitelistMiddleware } from "./src/middleware/whitelist";
+import { getWhitelistMiddleware } from "./src/middleware/whitelist";
 import { initialiseTorrentClient } from "./src/liveseries";
-
-const logger = getLogger(__filename);
 
 // Initialise the application instance
 export const wsInstance = expressWs(express());
 const app = wsInstance.app;
-
-// Determine the server port
-const PORT = process.env.NODE_PORT;
 
 // Define the endpoints
 const ENDPOINTS = [
@@ -27,9 +21,12 @@ const ENDPOINTS = [
 
 /** Initialises the HTTP RESTful API server. */
 async function initialise() {
+  const port = getServerPort();
+  if (!port) return;
+
   app.set("trust proxy", 1);
   app.use(getMiddleware());
-  app.use(whitelistMiddleware);
+  app.use(getWhitelistMiddleware(DEBUG_MODE));
 
   // Enable individual API routes
   for (const endpoint of ENDPOINTS) {
@@ -38,12 +35,8 @@ async function initialise() {
     app.use("/" + endpoint, middleware.router);
   }
 
-  startServer(app, PORT);
+  startServer(app, port);
   initialiseTorrentClient();
 }
 
-if (PORT) {
-  initialise();
-} else {
-  logger.error("No server port environment variable set.");
-}
+initialise();

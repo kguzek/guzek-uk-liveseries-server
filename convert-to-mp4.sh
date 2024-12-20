@@ -12,7 +12,7 @@ fi
 
 function log {
   echo "$1"
-  echo "$(date +'%F @ %T'): $1" >>/var/lib/transmission-daemon/script-done.log
+  echo "$(date +'%F @ %T'): $1" >>$LOG_FILE
 }
 
 function convert {
@@ -26,7 +26,15 @@ function convert {
     log "This file has already been converted"
     return
   fi
-  ffmpeg -hide_banner -loglevel warning -i "$1" -c:v copy -c:a aac -c:s mov_text -movflags +faststart "$1.mp4" && log "File conversion completed successfully" || log "Non-zero exit code while running ffmpeg"
+  # Filters out ffmpeg's output to avoid cluttering the log,
+  # ensures better video compatibility with some devices (like mobile browsers),
+  # converts the audio streams into stereo (with an appropriate bitrate and sample rate) to ensure music isn't separated from dialogue tracks,
+  # and adds the moov atom at the beginning of the file for faster streaming.
+  ffmpeg -hide_banner -loglevel warning -i "$1" \
+    -c:v libx264 -profile:v main -level 4.0 -preset medium -crf 23 \
+    -c:a aac -profile:a aac_low -b:a 128k -ac 2 -ar 4410 \
+    -movflags +faststart "$1.mp4" &&
+    log "File conversion completed successfully" || log "Non-zero exit code while running ffmpeg"
 }
 
 log "File '$FILE' has finished downloading"
