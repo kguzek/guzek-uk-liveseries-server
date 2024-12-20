@@ -31,7 +31,7 @@ function convert {
   # converts the audio streams into stereo (with an appropriate bitrate and sample rate) to ensure music isn't separated from dialogue tracks,
   # and adds the moov atom at the beginning of the file for faster streaming.
   ffmpeg -hide_banner -loglevel warning -i "$1" \
-    -c:v libx264 -profile:v main -level 4.0 -preset medium -crf 23 \
+    -c:v libx264 -profile:v main -pix_fmt yuv420p -level 4.0 -preset medium -crf 23 \
     -c:a aac -profile:a aac_low -b:a 128k -ac 2 -ar 44100 \
     -movflags +faststart "$1.mp4" &&
     log "File conversion completed successfully" || log "Non-zero exit code while running ffmpeg"
