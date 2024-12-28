@@ -1,4 +1,6 @@
-# Guzek UK LiveSeries Server
+# The Guzek UK LiveSeries Server
+
+![AGPLv3](https://www.gnu.org/graphics/agplv3-155x51.png)
 
 ## Intro
 
@@ -7,13 +9,21 @@ Once you get it up and running on your machine, all you need to do is visit [www
 Then, simply navigate to [/liveseries](https://www.guzek.uk/liveseries), select a couple shows to watch -- and watch the magic happen!
 
 You can choose to subscribe to automatic downloads, or manually select episodes to be downloaded from the list.
-WARNING! The subscription option tries to download every single episode you haven't watched that has released so far from your liked TV shows; use it for shows you're more-or-less up to date on, or if you have a large enough disk.
+
+> [!WARNING]
+> The subscription option tries to download every single episode you haven't watched that has released so far from your liked TV shows; use it for shows you're more-or-less up to date on, or if you have a large enough disk.
 
 ## Installation
 
+> [!CAUTION]
+> Please ensure that downloading torrents is legal in your country before installing this program. Refer to the [copyright section](#Copyright) at the bottom of this page or the [LICENSE](LICENSE) file included in this repository, specifically [§15](LICENSE#L587) and [§16](LICENSE#L598).
+
 ### Installer
 
-`[WIP]` I'm working on an installer (or npx command?) which will automatically do most of the setup.
+> [!NOTE] 
+> I'm working on an installer (or `npx` command?) which will automatically do most or all of the setup.
+
+For now, there is no installer. You must install this program manually.
 
 ### Manual installation
 
@@ -68,7 +78,8 @@ ffmpeg -version > /dev/null 2>&1 || apt install ffmpeg
   "script-torrent-done-filename": "/path/to/project/convert-to-mp4.sh"
 }
 ```
-You can also modify the conversion script to suit your needs.
+> [!TIP]
+> You can also modify the conversion script to suit your needs.
 
 Remember to start the torrent service back up again:
 ```bash
@@ -113,6 +124,25 @@ Example:
 ```
 curl localhost:5021/liveseries/torrents/[show-name]/[season]/[episode]?sort_by=size&sort_direction=ascending
 ```
+
+## Copyright
+
+Copyright © 2024-Present by Konrad Guzek
+
+This file is part of the Guzek UK LiveSeries Server.
+
+The Guzek UK LiveSeries Server is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+The Guzek UK LiveSeries Server is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ## That's all
 
