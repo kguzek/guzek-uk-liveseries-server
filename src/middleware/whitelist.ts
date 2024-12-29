@@ -31,7 +31,7 @@ export function getWhitelistMiddleware(debugMode: boolean) {
       sendError(res, code, { message });
     }
 
-    if (req.originalUrl.endsWith("/ws/.websocket")) return next();
+    if (req.path === "/health") return next();
 
     if (!req.user) {
       return reject(401, "You must be authorised to access this resource.");
