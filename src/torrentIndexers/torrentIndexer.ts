@@ -83,6 +83,15 @@ const standardDeviation = (values: number[], mean: number) =>
 const zScore = (value: number, mean: number, sigma: number) =>
   (value - mean) / sigma;
 
+function isOutlier(value: number, mean: number, sigma: number) {
+  const z = zScore(value, mean, sigma);
+  // This is the purely mathematical definition, kept as a safeguard
+  // in case the other one is modified to be too lenient
+  if (Math.abs(z) > 3) return true;
+  // This is a much stricter definition
+  return Math.abs(z + 0.5) > 1;
+}
+
 export abstract class TorrentIndexer {
   abstract SERVICE_URL_BASE: string;
   COOKIE_HEADER: string = "";
@@ -143,7 +152,7 @@ export abstract class TorrentIndexer {
     const sigma = standardDeviation(sizes, mean);
     const resultsBySeeders = results.sort((a, b) => b.seeders - a.seeders);
     const resultsWithoutOutliers = resultsBySeeders.filter(
-      (result) => result.size < mean && zScore(result.size, mean, sigma) > -1
+      (result) => !isOutlier(result.size, mean, sigma)
     );
     const topResult = resultsWithoutOutliers[0];
     return topResult;
