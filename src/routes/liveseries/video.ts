@@ -13,7 +13,6 @@ router.get("/:showName/:season/:episode", (req, res) =>
     req,
     res,
     (torrent) => sendFileStream(req, res, TORRENT_DOWNLOAD_PATH + torrent.name),
-
     async (episode) => {
       const filename = await searchForDownloadedEpisode(res, episode);
       if (!filename) return;

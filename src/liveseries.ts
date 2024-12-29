@@ -28,8 +28,12 @@ const parseFilename = (filename: string) =>
 
 export let torrentClient: TorrentClient;
 
+/** Returns a 404 response to the client when thrown within a `handleTorrentRequest` callback. */
+export class EpisodeNotFoundError extends Error {}
+
 /**
  * Searches the downloads folder for a filename which matches the episode.
+ * The episode's show name must be sanitised before calling this function.
  * Sends a 500 response if the folder could not be read.
  * Throws an `Error` if the episode is not found, which must be handled.
  */
@@ -37,9 +41,7 @@ export async function searchForDownloadedEpisode(
   res: Response,
   episode: BasicEpisode
 ) {
-  const search = `${sanitiseShowName(episode.showName)} ${serialiseEpisode(
-    episode
-  )}`;
+  const search = `${episode.showName} ${serialiseEpisode(episode)}`;
   const searchLowerCase = search.toLowerCase();
 
   let files: string[];
@@ -56,7 +58,7 @@ export async function searchForDownloadedEpisode(
       parseFilename(file).startsWith(searchLowerCase) && file.endsWith(".mp4")
   );
   if (match) return TORRENT_DOWNLOAD_PATH + match;
-  throw new Error("Backup episode search failed");
+  throw new EpisodeNotFoundError();
 }
 
 /**
@@ -88,28 +90,31 @@ export async function handleTorrentRequest(
       message: "Could not obtain the current torrent list. Try again later.",
     });
   }
-  if (!torrent) {
-    const serialised = serialiseEpisode({ season, episode });
+  basicEpisode.showName = sanitiseShowName(basicEpisode.showName);
+  if (torrent) {
+    try {
+      await callback(torrent, basicEpisode);
+      return;
+    } catch (error) {
+      if (!(error instanceof EpisodeNotFoundError)) throw error;
+    }
+  } else {
     if (torrentNotFoundCallback) {
       try {
-        const promise = torrentNotFoundCallback(basicEpisode);
-        if (promise) await promise;
+        await torrentNotFoundCallback(basicEpisode);
         return;
       } catch (error) {
-        if (
-          !(error instanceof Error) ||
-          error.message !== "Backup episode search failed"
-        )
-          logger.error(error);
+        if (!(error instanceof EpisodeNotFoundError)) logger.error(error);
         // Continue to the 404 response
       }
     }
-    return sendError(res, 404, {
-      message: `Episode '${showName} ${serialised}' was not found in the downloads.`,
-    });
   }
-  const sanitised = sanitiseShowName(showName);
-  callback(torrent, { showName: sanitised, season, episode });
+  return sendError(res, 404, {
+    message: `Episode '${basicEpisode.showName} ${serialiseEpisode({
+      season,
+      episode,
+    })}' was not found in the downloads.`,
+  });
 }
 
 export async function initialiseTorrentClient() {

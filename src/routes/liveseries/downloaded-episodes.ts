@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Response } from "express";
 import expressWs from "express-ws";
 import fs from "fs/promises";
 import { getLogger } from "guzek-uk-common/logger";
@@ -8,8 +8,9 @@ import {
   ConvertedTorrentInfo,
   DownloadStatus,
   TORRENT_DOWNLOAD_PATH,
+  TorrentInfo,
 } from "guzek-uk-common/models";
-import { DownloadedEpisode } from "guzek-uk-common/sequelize";
+import { DownloadedEpisode, sanitiseShowName } from "guzek-uk-common/sequelize";
 import {
   sendError,
   sendOK,
@@ -18,8 +19,12 @@ import {
 } from "guzek-uk-common/util";
 import { TorrentIndexer } from "../../torrentIndexers/torrentIndexer";
 import { Eztv } from "../../torrentIndexers/eztv";
-import { handleTorrentRequest, torrentClient } from "../../liveseries";
-import { TorrentClient } from "../../torrentClient";
+import {
+  EpisodeNotFoundError,
+  handleTorrentRequest,
+  searchForDownloadedEpisode,
+  torrentClient,
+} from "../../liveseries";
 
 export const router = express.Router() as expressWs.Router;
 const logger = getLogger(__filename);
@@ -40,8 +45,6 @@ export function sendWebsocketMessage() {
   }
 }
 
-type TorrentInfo = Awaited<ReturnType<TorrentClient["addTorrent"]>>;
-
 async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
   const { showName, ...where } = data;
   const result = await DownloadedEpisode.findOne({ where });
@@ -51,7 +54,7 @@ async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
 
 async function downloadEpisode(
   data: BasicTvShow & BasicEpisode
-): Promise<TorrentInfo | null> {
+): Promise<ConvertedTorrentInfo | null> {
   const result = await torrentIndexer.findTopResult(data);
   if (!result || !result.link) {
     logger.error(
@@ -62,7 +65,7 @@ async function downloadEpisode(
 
   const modelParams = { ...data };
   const createEntry = () => DownloadedEpisode.create(modelParams);
-  let torrentInfo: TorrentInfo;
+  let torrentInfo: ConvertedTorrentInfo | null;
   try {
     torrentInfo = await torrentClient.addTorrent(result.link, createEntry);
   } catch {
@@ -77,6 +80,67 @@ async function downloadEpisode(
   logger.info(`Successfully added new torrent.`);
   sendWebsocketMessage();
   return torrentInfo;
+}
+
+async function deleteEpisode(
+  res: Response,
+  episode: BasicEpisode,
+  torrent?: TorrentInfo
+) {
+  logger.info(
+    `Deleting episode '${episode.showName}' ${serialiseEpisode(episode)}`
+  );
+  let destroyedRows;
+  try {
+    destroyedRows = await DownloadedEpisode.destroy({
+      where: { ...episode, showName: sanitiseShowName(episode.showName) },
+    });
+  } catch (error) {
+    logger.error(error);
+    return sendError(res, 500, {
+      message: "Could not delete the episode from the database.",
+    });
+  }
+  if (!destroyedRows) {
+    throw new EpisodeNotFoundError();
+  }
+  let filename: string | void;
+  if (torrent) {
+    try {
+      await torrentClient.removeTorrent(torrent);
+    } catch (error) {
+      logger.error(error);
+      return sendError(res, 500, {
+        message: `An unknown error occured while removing the torrent. The database entry was removed.`,
+      });
+    }
+    sendWebsocketMessage();
+    filename = torrent.name;
+  } else {
+    try {
+      filename = await searchForDownloadedEpisode(res, episode);
+    } catch (error) {
+      if (!(error instanceof EpisodeNotFoundError)) throw error;
+      return sendError(res, 500, {
+        message: `Neither the torrent nor the episode files could be found. The database entry was removed.`,
+      });
+    }
+  }
+
+  if (!filename) return;
+
+  try {
+    await fs.rm(TORRENT_DOWNLOAD_PATH + filename, { recursive: true });
+  } catch (error) {
+    logger.error(error);
+    return sendError(res, 500, {
+      message: `An unknown error occurred while removing the files. The ${
+        torrent ? "torrent and database entry were" : "database entry was"
+      } removed.`,
+    });
+  }
+
+  sendOK(res);
 }
 
 // START downloading episode
@@ -112,36 +176,12 @@ router.post("/", async (req, res) => {
 });
 
 router.delete("/:showName/:season/:episode", (req, res) =>
-  handleTorrentRequest(req, res, async (torrent, episode) => {
-    try {
-      await DownloadedEpisode.destroy({ where: episode });
-    } catch (error) {
-      logger.error(error);
-      return sendError(res, 500, {
-        message: "Could not delete the episode from the database.",
-      });
-    }
-    try {
-      await torrentClient.removeTorrent(torrent);
-    } catch (error) {
-      logger.error(error);
-      return sendError(res, 500, {
-        message: `An unknown error occured while removing the torrent. The database entry was removed.`,
-      });
-    }
-    sendWebsocketMessage();
-
-    try {
-      await fs.rm(TORRENT_DOWNLOAD_PATH + torrent.name, { recursive: true });
-    } catch (error) {
-      logger.error(error);
-      return sendError(res, 500, {
-        message: `An unknown error occurred while removing the files. The torrent and database entry were removed.`,
-      });
-    }
-
-    sendOK(res);
-  })
+  handleTorrentRequest(
+    req,
+    res,
+    (torrent, episode) => deleteEpisode(res, episode, torrent),
+    (episode) => deleteEpisode(res, episode)
+  )
 );
 
 // GET all downloaded episodes
