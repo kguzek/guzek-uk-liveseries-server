@@ -98,8 +98,7 @@ The manual installation involves quite a few steps, but the process is pretty st
     }
     ```
 
-    > [!TIP]
-    > You can also modify the conversion script to suit your needs.
+    Tip: You can also modify the conversion script to suit your needs.
 
     Remember to start the torrent service back up again:
 
