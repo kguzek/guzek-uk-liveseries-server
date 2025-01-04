@@ -36,8 +36,6 @@ services:
       - MY_SQL_DB_NAME=liveseries
     ports:
       - "${APP_PORT:-80}:5021"
-    volumes:
-      - .:/app
     depends_on:
       - db
       - transmission
