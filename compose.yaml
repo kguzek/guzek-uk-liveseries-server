@@ -21,9 +21,9 @@ services:
       - USER=${TR_USER}
       - PASS=${TR_PASSWORD}
     volumes:
-      - /var/lib/transmission-daemon/config:/config
       - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
-      - /var/lib/transmission-daemon/watch:/watch
+      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
+      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
     ports:
       - 9091:9091
       - 51413:51413
