@@ -1,7 +1,7 @@
 import express from "express";
 import expressWs from "express-ws";
 import { setupEnvironment } from "guzek-uk-common/setup";
-const DEBUG_MODE = setupEnvironment(true);
+const debugMode = setupEnvironment(true);
 import { startServer } from "guzek-uk-common/server";
 import { getMiddleware } from "guzek-uk-common/middleware";
 import { getWhitelistMiddleware } from "./src/middleware/whitelist";
@@ -22,8 +22,8 @@ const ENDPOINTS = [
 /** Initialises the HTTP RESTful API server. */
 async function initialise() {
   app.set("trust proxy", 1);
-  app.use(getMiddleware());
-  app.use(getWhitelistMiddleware(DEBUG_MODE));
+  app.use(getMiddleware(debugMode));
+  app.use(getWhitelistMiddleware(debugMode));
 
   // Enable individual API routes
   for (const endpoint of ENDPOINTS) {

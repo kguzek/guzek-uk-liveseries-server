@@ -1,10 +1,10 @@
 import express from "express";
-import { TORRENT_DOWNLOAD_PATH } from "guzek-uk-common/models";
 import { sendFileStream } from "guzek-uk-common/util";
 import {
   handleTorrentRequest,
   searchForDownloadedEpisode,
 } from "../../liveseries";
+import { TORRENT_DOWNLOAD_PATH } from "../../config";
 
 export const router = express.Router();
 

@@ -7,7 +7,6 @@ import {
   BasicTvShow,
   ConvertedTorrentInfo,
   DownloadStatus,
-  TORRENT_DOWNLOAD_PATH,
   TorrentInfo,
 } from "guzek-uk-common/models";
 import { DownloadedEpisode, sanitiseShowName } from "guzek-uk-common/sequelize";
@@ -25,6 +24,7 @@ import {
   searchForDownloadedEpisode,
   torrentClient,
 } from "../../liveseries";
+import { TORRENT_DOWNLOAD_PATH } from "../../config";
 
 export const router = express.Router() as expressWs.Router;
 const logger = getLogger(__filename);

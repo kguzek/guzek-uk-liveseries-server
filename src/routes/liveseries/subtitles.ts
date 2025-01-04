@@ -4,7 +4,6 @@ import fs from "fs/promises";
 import {
   BasicEpisode,
   STATIC_CACHE_DURATION_MINS,
-  TORRENT_DOWNLOAD_PATH,
 } from "guzek-uk-common/models";
 import {
   downloadSubtitles,
@@ -21,6 +20,7 @@ import {
   handleTorrentRequest,
   searchForDownloadedEpisode,
 } from "../../liveseries";
+import { TORRENT_DOWNLOAD_PATH } from "../../config";
 
 export const router = express.Router();
 

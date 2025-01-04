@@ -1,0 +1,41 @@
+services:
+
+  db:
+    image: mariadb
+    restart: always
+    container_name: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=CHANGE_THIS_PASSWORD
+      - MARIADB_DATABASE=liveseries
+      - MARIADB_USER=${MY_SQL_DB_USER}
+      - MARIADB_PASSWORD=${MY_SQL_DB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./scripts/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - USER=${TR_USER}
+      - PASS=${TR_PASSWORD}
+    volumes:
+      - /var/lib/transmission-daemon/config:/config
+      - ${TR_DOWNLOAD_PATH}:/downloads
+      - /var/lib/transmission-daemon/watch:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+  server:
+    container_name: liveseries
+    build: .
+    environment:
+      - MY_SQL_DB_NAME=liveseries
+    ports:
+      - "${APP_PORT:-80}:5021"
+    volumes:
+      - .:/app

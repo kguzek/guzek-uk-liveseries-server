@@ -1,6 +1,6 @@
 {
   "name": "guzek-uk-liveseries-server",
-  "version": "3.0.2",
+  "version": "3.1.0",
   "description": "A self-hostable server for downloading & storing your favourite TV shows.",
   "author": "Konrad Guzek",
   "homepage": "https://github.com/kguzek/guzek-uk-liveseries-server#readme",
@@ -13,7 +13,8 @@
     "dev": "NODE_ENV=development NODE_PORT=5021 nodemon --exec ts-node --files index.ts",
     "start": "NODE_ENV=development NODE_PORT=5021 ts-node index.ts",
     "prod": "NODE_ENV=production NODE_PORT=5021 node --max-old-space-size=192 dist/index.js",
-    "compile": "rm -r dist; tsc"
+    "compile": "rm -r dist; tsc",
+    "up": "npm update guzek-uk-common"
   },
   "repository": {
     "type": "git",
@@ -30,7 +31,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "express-ws": "^5.0.2",
-    "guzek-uk-common": "^1.5.2",
+    "guzek-uk-common": "latest",
     "node-html-parser": "^6.1.13"
   },
   "devDependencies": {

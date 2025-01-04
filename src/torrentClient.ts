@@ -2,11 +2,11 @@ import axios, { AxiosError } from "axios";
 import { getLogger } from "guzek-uk-common/logger";
 import {
   TorrentInfo,
-  TORRENT_DOWNLOAD_PATH,
   BasicEpisode,
   ConvertedTorrentInfo,
 } from "guzek-uk-common/models";
 import { convertTorrentInfo } from "guzek-uk-common/util";
+import { TORRENT_DOWNLOAD_PATH } from "./config";
 
 const SESSION_ID_HEADER_NAME = "X-Transmission-Session-Id";
 const SESSION_ID_PATTERN = /<code>X-Transmission-Session-Id: (.+)<\/code>/;
@@ -58,13 +58,13 @@ export class TorrentClient {
   private initPromise: Promise<void> | null = null;
 
   constructor() {
-    const auth = process.env.TR_AUTH;
+    const username = process.env.TR_USER;
+    const password = process.env.TR_PASSWORD;
 
-    if (!auth) {
-      logger.error("No TR_AUTH variable set.");
+    if (!username || !password) {
+      logger.error("No TR_USER or TR_PASSWORD variable set.");
       return;
     }
-    const [username, password] = auth.split(":");
     this.auth = { username, password };
     this.initPromise = this.init();
   }
