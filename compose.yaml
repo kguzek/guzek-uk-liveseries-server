@@ -1,5 +1,4 @@
 services:
-
   db:
     image: mariadb
     restart: always
@@ -39,3 +38,9 @@ services:
       - "${APP_PORT:-80}:5021"
     volumes:
       - .:/app
+    depends_on:
+      - db
+      - transmission
+
+volumes:
+  mariadb_data:
