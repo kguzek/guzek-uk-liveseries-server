@@ -18,21 +18,72 @@ You can choose to subscribe to automatic downloads, or manually select episodes 
 > [!CAUTION]
 > Please ensure that downloading torrents is legal in your country before installing this program. Refer to the [copyright section](#copyright) at the bottom of this page or the [LICENSE](LICENSE) file included in this repository, specifically [§15](LICENSE#L587) and [§16](LICENSE#L598).
 
-### Installer
+### Docker Compose
 
-> [!NOTE]
-> I'm working on an installer (or `npx` command?) which will automatically do most or all of the setup.
+The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compose.
 
-For now, there is no installer. You must install this program manually.
+1. Ensure you have Docker Compose installed on your system. The Docker website contains [very informative documentation](https://docs.docker.com/compose/install/) on how to do this, if you haven't already. You can check if it's installed via the terminal:
+
+    ```bash
+    docker compose version
+    ```
+
+2. Clone this repository:
+
+    ```bash
+    git clone --depth 1 https://github.com/kguzek/guzek-uk-liveseries-server
+    ```
+
+3. Configure your environment variables. Start by copying `template.env` to `.env`:
+
+      ```bash
+      cp {template,}.env
+      ```
+
+    The fields that you **must** update are:
+      - `MY_SQL_DB_USER`
+      - `MY_SQL_DB_PASSWORD`
+      - `TR_USER`
+      - `TR_PASSWORD`
+
+    For best security, it is a good decision to set `MY_SQL_ROOT_PASSWORD`. This isn't used by the application, but it allows you to access the data manually using the root account in case something goes wrong. Setting it directly in `compose.yaml` under field `services.db.environment.MARIADB_ROOT_PASSWORD` has the same effect as changing the value in `.env`.
+
+    If you leave out the rest, the application will work just fine.
+
+    IMPORTANT: If you modify `MY_SQL_DB_NAME`, make sure to update `/scripts/create_schema.sql` to reflect this change. By default, this script assumes your database is named `database`. The other scripts are not used when installing via docker compose, so you can ignore them.
+
+4. Configure your server whitelist. If you haven't done so already, register an account at [www.guzek.uk](https://www.guzek.uk/signup), and copy your account UUID from your profile page. Then, copy `whitelist.template.json` into `whitelist.json`:
+
+    ```bash
+    cp whitelist{.template,}.json
+    ```
+
+    Add your UUID to the array. The UUID that is there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Administrator UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
+
+    ```json
+    ["55d914eb-6cfb-4ddf-bc08-443d64191cfc", "a5260d6a-7275-4d86-bcd7-fd5372827ff5"]
+    ```
+
+5. Run the application!
+
+    ```bash
+    sudo docker compose up
+    ```
+
+    This will also automatically install the dependencies, MariaDB server and Transmission torrent client. The default location for your downloaded files is `/data/transmission/downloads/complete`. To stop the application, you can type <kbd>Control</kbd>+<kbd>C</kbd> (recommended) or stop it from another terminal from the project directory using the `down` command.
+
+    ```bash
+    sudo docker compose down
+    ```
 
 ### Manual installation
 
-The manual installation involves quite a few steps, but the process is pretty straightforward.
+The manual installation involves more steps than the docker compose method, but the process itself is rather straightforward.
 
 1. Clone this repository:
 
     ```bash
-    git clone --depth 1 git@github.com:kguzek/guzek-uk-liveseries-server
+    git clone --depth 1 https://github.com/kguzek/guzek-uk-liveseries-server
     ```
 
 2. Install the project dependencies:
