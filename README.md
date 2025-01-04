@@ -34,7 +34,13 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
     git clone --depth 1 https://github.com/kguzek/guzek-uk-liveseries-server
     ```
 
-3. Configure your environment variables. Start by copying `template.env` to `.env`:
+    Then, enter the newly-created project directory:
+
+   ```bash
+   cd guzek-uk-liveseries-server
+   ```
+
+4. Configure your environment variables. Start by copying `template.env` to `.env`:
 
       ```bash
       cp {template,}.env
@@ -52,7 +58,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
 
     IMPORTANT: If you modify `MY_SQL_DB_NAME`, make sure to update `/scripts/create_schema.sql` to reflect this change. By default, this script assumes your database is named `database`. The other scripts are not used when installing via docker compose, so you can ignore them.
 
-4. Configure your server whitelist. If you haven't done so already, register an account at [www.guzek.uk](https://www.guzek.uk/signup), and copy your account UUID from your profile page. Then, copy `whitelist.template.json` into `whitelist.json`:
+5. Configure your server whitelist. If you haven't done so already, register an account at [www.guzek.uk](https://www.guzek.uk/signup), and copy your account UUID from your profile page. Then, copy `whitelist.template.json` into `whitelist.json`:
 
     ```bash
     cp whitelist{.template,}.json
@@ -64,7 +70,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
     ["55d914eb-6cfb-4ddf-bc08-443d64191cfc", "a5260d6a-7275-4d86-bcd7-fd5372827ff5"]
     ```
 
-5. Run the application!
+6. Run the application!
 
     ```bash
     sudo docker compose up -d
