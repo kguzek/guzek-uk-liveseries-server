@@ -67,14 +67,16 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
 5. Run the application!
 
     ```bash
-    sudo docker compose up
+    sudo docker compose up -d
     ```
 
-    This will also automatically install the dependencies, MariaDB server and Transmission torrent client. The default location for your downloaded files is `/data/transmission/downloads/complete`. To stop the application, you can type <kbd>Control</kbd>+<kbd>C</kbd> (recommended) or stop it from another terminal from the project directory using the `down` command.
+    This will also automatically install the dependencies, MariaDB server and Transmission torrent client. The default location for your downloaded files is `/data/transmission/downloads/complete`. You can use the `down` command to stop the application.
 
     ```bash
     sudo docker compose down
     ```
+
+    Note: if you have the Docker daemon set to start automatically on boot, this application will start with it. Using `down` will **not** disable this behaviour.
 
 ### Manual installation
 

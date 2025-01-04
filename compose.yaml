@@ -1,8 +1,8 @@
 services:
   db:
     image: mariadb
-    restart: always
     container_name: mariadb
+    restart: always
     environment:
       - MARIADB_ROOT_PASSWORD=${MY_SQL_ROOT_PASSWORD}
       - MARIADB_DATABASE=liveseries
@@ -14,24 +14,29 @@ services:
   transmission:
     image: lscr.io/linuxserver/transmission:latest
     container_name: transmission
+    restart: always
     environment:
+      - DOCKER_MODS=linuxserver/mods:transmission-env-var-settings
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
       - USER=${TR_USER}
       - PASS=${TR_PASSWORD}
+      - TRANSMISSION_SCRIPT_TORRENT_DONE_ENABLED=true
+      - TRANSMISSION_SCRIPT_TORRENT_DONE_FILENAME=/convert-to-mp4.sh
     volumes:
       - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
       - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
       - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
+      - ./convert-to-mp4.sh:/convert-to-mp4.sh
     ports:
       - 9091:9091
       - 51413:51413
       - 51413:51413/udp
-    restart: unless-stopped
   server:
-    container_name: liveseries
     build: .
+    container_name: liveseries
+    restart: always
     environment:
       - MY_SQL_DB_NAME=liveseries
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
