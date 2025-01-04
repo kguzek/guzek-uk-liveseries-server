@@ -4,7 +4,6 @@ services:
     container_name: mariadb
     restart: always
     environment:
-      - MARIADB_ROOT_PASSWORD=${MY_SQL_ROOT_PASSWORD}
       - MARIADB_DATABASE=liveseries
       - MARIADB_USER=${MY_SQL_DB_USER}
       - MARIADB_PASSWORD=${MY_SQL_DB_PASSWORD}

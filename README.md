@@ -46,7 +46,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
       - `TR_USER`
       - `TR_PASSWORD`
 
-    For best security, it is a good decision to set `MY_SQL_ROOT_PASSWORD`. This isn't used by the application, but it allows you to access the data manually using the root account in case something goes wrong. Setting it directly in `compose.yaml` under field `services.db.environment.MARIADB_ROOT_PASSWORD` has the same effect as changing the value in `.env`.
+    For best security, it is a good decision to set `MARIADB_ROOT_PASSWORD`. This isn't used by the application, but it allows you to access the data manually using the root account in case something goes wrong.
 
     If you leave out the rest, the application will work just fine.
 
