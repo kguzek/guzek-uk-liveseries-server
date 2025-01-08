@@ -23,11 +23,15 @@ services:
       - PASS=${TR_PASSWORD}
       - TRANSMISSION_SCRIPT_TORRENT_DONE_ENABLED=true
       - TRANSMISSION_SCRIPT_TORRENT_DONE_FILENAME=/convert-to-mp4.sh
+      - TR_DOWNLOAD_PATH=${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}
+      - TR_CONFIG_PATH=${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}
+      - TR_WATCH_PATH=${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}
     volumes:
-      - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
-      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
-      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
+      - $TR_DOWNLOAD_PATH:/downloads
+      - $TR_CONFIG_PATH:/config
+      - $TR_WATCH_PATH:/watch
       - ./convert-to-mp4.sh:/convert-to-mp4.sh
+      - ./whitelist.json:/app/whitelist.json
     ports:
       - 9091:9091
       - 51413:51413
