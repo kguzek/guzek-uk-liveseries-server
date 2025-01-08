@@ -31,7 +31,6 @@ services:
       - ${TR_CONFIG_PATH}:/config
       - ${TR_WATCH_PATH}:/watch
       - ./convert-to-mp4.sh:/convert-to-mp4.sh
-      - ./whitelist.json:/app/whitelist.json
     ports:
       - 9091:9091
       - 51413:51413
@@ -43,6 +42,9 @@ services:
     environment:
       - MY_SQL_DB_NAME=liveseries
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
+    volumes:
+      - ./whitelist.json:/app/whitelist.json
+
     ports:
       - "${APP_PORT:-80}:5021"
     depends_on:
