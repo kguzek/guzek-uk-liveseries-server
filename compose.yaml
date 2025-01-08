@@ -27,9 +27,9 @@ services:
       - TR_CONFIG_PATH=${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}
       - TR_WATCH_PATH=${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}
     volumes:
-      - $TR_DOWNLOAD_PATH:/downloads
-      - $TR_CONFIG_PATH:/config
-      - $TR_WATCH_PATH:/watch
+      - ${TR_DOWNLOAD_PATH}:/downloads
+      - ${TR_CONFIG_PATH}:/config
+      - ${TR_WATCH_PATH}:/watch
       - ./convert-to-mp4.sh:/convert-to-mp4.sh
       - ./whitelist.json:/app/whitelist.json
     ports:
