@@ -58,7 +58,7 @@ services:
       - "${APP_PORT:-80}:5021"
     depends_on:
       db:
-        condition: sevice_healthy
+        condition: service_healthy
       transmission:
         condition: service_started
 
