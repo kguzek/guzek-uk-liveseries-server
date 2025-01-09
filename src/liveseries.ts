@@ -44,8 +44,8 @@ export async function searchForDownloadedEpisode(
   let files: string[];
   try {
     files = await fs.readdir(TORRENT_DOWNLOAD_PATH, RECURSIVE_READ_OPTIONS);
-  } catch (e) {
-    logger.error(e);
+  } catch (error) {
+    logger.error("Error loading downloaded episodes:", error);
     return sendError(res, 500, {
       message: "Could not load the downloaded episodes.",
     });
@@ -101,7 +101,8 @@ export async function handleTorrentRequest(
         await torrentNotFoundCallback(basicEpisode);
         return;
       } catch (error) {
-        if (!(error instanceof EpisodeNotFoundError)) logger.error(error);
+        if (!(error instanceof EpisodeNotFoundError))
+          logger.error("Error while searching for torrent:", error);
         // Continue to the 404 response
       }
     }
@@ -119,7 +120,7 @@ export async function initialiseTorrentClient() {
   try {
     await torrentClient.waitForInitialisation();
   } catch (error) {
-    logger.error("Initialisation failure: " + (error as Error).message);
+    logger.error("Initialisation failure:", error);
     logger.warn(
       "Ensure that your transmission client is running and that the configuration of `.env` is correct."
     );
