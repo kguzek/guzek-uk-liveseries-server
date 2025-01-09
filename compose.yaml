@@ -4,7 +4,7 @@ services:
     container_name: mariadb
     restart: always
     environment:
-      - MARIADB_DATABASE=liveseries
+      - MARIADB_DATABASE=database
       - MARIADB_USER=${MY_SQL_DB_USER}
       - MARIADB_PASSWORD=${MY_SQL_DB_PASSWORD}
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
@@ -41,7 +41,7 @@ services:
     container_name: liveseries
     restart: always
     environment:
-      - MY_SQL_DB_NAME=liveseries
+      - MY_SQL_DB_NAME=database
       - MY_SQL_DB_HOST=db
       - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
