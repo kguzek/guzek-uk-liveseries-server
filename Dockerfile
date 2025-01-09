@@ -10,6 +10,7 @@ RUN test -f whitelist.json || (echo "whitelist.json not found. Please follow the
 
 ENV NODE_ENV=production
 ENV NODE_PORT=5021
+ENV LOG_TO_CONSOLE='true'
 
 RUN npm run compile
 EXPOSE 5021
