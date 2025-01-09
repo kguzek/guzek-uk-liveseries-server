@@ -2,5 +2,5 @@
 CREATE USER 'liveseries_api' @'localhost' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
 -- In an ideal world, we should strictly provide the grants the API has access
 -- to a specific table rather than all the privileges.
-GRANT ALL PRIVILEGES ON `database`.* TO 'liveseries_api' @'localhost';
+GRANT ALL PRIVILEGES ON `liveseries`.* TO 'liveseries_api' @'localhost';
 FLUSH PRIVILEGES;

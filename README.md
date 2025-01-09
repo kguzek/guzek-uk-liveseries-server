@@ -56,7 +56,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
 
     If you leave out the rest, the application will work just fine.
 
-    IMPORTANT: If you modify `MY_SQL_DB_NAME`, make sure to update `/scripts/create_schema.sql` to reflect this change. By default, this script assumes your database is named `database`. The other scripts are not used when installing via docker compose, so you can ignore them.
+    IMPORTANT: If you modify `MY_SQL_DB_NAME`, make sure to update `/scripts/create_schema.sql` to reflect this change. By default, this script assumes your database is named `liveseries`. The other scripts are not used when installing via docker compose, so you can ignore them.
 
 5. Configure your server whitelist. If you haven't done so already, register an account at [www.guzek.uk](https://www.guzek.uk/signup), and copy your account UUID from your profile page. Then, copy `whitelist.template.json` into `whitelist.json`:
 
