@@ -82,7 +82,7 @@ export async function handleTorrentRequest(
   try {
     torrent = await torrentClient.getTorrentInfo(basicEpisode);
   } catch (error) {
-    logger.error(error);
+    logger.error("Could not get torrent info:", error);
     return sendError(res, 503, {
       message: "Could not obtain the current torrent list. Try again later.",
     });

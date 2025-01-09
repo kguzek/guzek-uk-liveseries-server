@@ -1,5 +1,5 @@
-import express, { Response } from "express";
-import expressWs from "express-ws";
+import express, { Request, Response } from "express";
+import expressWs, { WebsocketRequestHandler } from "express-ws";
 import fs from "fs/promises";
 import { getLogger } from "guzek-uk-common/logger";
 import {
@@ -185,7 +185,8 @@ router.delete("/:showName/:season/:episode", (req, res) =>
 );
 
 // GET all downloaded episodes
-router.ws("/ws", (ws, req) => {
+
+const websocketHandler: WebsocketRequestHandler = (ws, req) => {
   if (!torrentClient) {
     logger.error(
       "Websocket connection established without active torrent client."
@@ -259,5 +260,12 @@ router.ws("/ws", (ws, req) => {
       const message = JSON.stringify({ data });
       ws.send(message);
     }
+  });
+};
+
+router.ws("/ws", websocketHandler);
+router.all("/ws", (req, res) => {
+  sendError(res, 400, {
+    message: `Websocket upgrade required for path ${req.path}`,
   });
 });
