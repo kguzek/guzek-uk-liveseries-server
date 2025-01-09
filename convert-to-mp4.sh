@@ -1,6 +1,10 @@
 #!/usr/bin/bash
 
-LOG_FILE="/var/log/guzek-uk/transmission-script-done.log"
+LOG_DIRECTORY=/var/log/guzek-uk
+if [ ! -d $LOG_DIRECTORY ]; then
+  mkdir -p $LOG_DIRECTORY
+fi
+LOG_FILE="$LOG_DIRECTORY/transmission-script-done.log"
 VIDEO_PATTERN='\.(mkv|avi)$'
 
 if [[ $TR_TORRENT_NAME = "" ]]; then
