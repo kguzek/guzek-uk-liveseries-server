@@ -41,6 +41,8 @@ services:
     restart: always
     environment:
       - MY_SQL_DB_NAME=liveseries
+      - MY_SQL_DB_HOST=db
+      - TRANSMISSION_URL=http://transmission/transmission/rpc
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
     volumes:
       - ./whitelist.json:/app/whitelist.json
