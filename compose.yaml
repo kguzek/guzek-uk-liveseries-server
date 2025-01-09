@@ -51,9 +51,10 @@ services:
       - MY_SQL_DB_HOST=db
       - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
+      - TR_DOWNLOAD_PATH=/downloads
     volumes:
       - ./whitelist.json:/app/whitelist.json
-
+      - ${TR_DOWNLOAD_PATH}:/downloads
     ports:
       - "${APP_PORT:-80}:5021"
     depends_on:
