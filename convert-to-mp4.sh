@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 LOG_DIRECTORY=/var/log/guzek-uk
 if [ ! -d $LOG_DIRECTORY ]; then
