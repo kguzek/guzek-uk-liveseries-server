@@ -166,7 +166,13 @@ export class TorrentClient {
     const torrents = await this.getTorrents();
     const showNameLower = episode.showName.toLowerCase();
     return torrents.find((torrent) => {
-      const convertedTorrent = convertTorrentInfo(torrent);
+      let convertedTorrent: ConvertedTorrentInfo;
+      try {
+        convertedTorrent = convertTorrentInfo(torrent);
+      } catch (error) {
+        logger.warn("Skipping invalid torrent:", error);
+        return false;
+      }
       return (
         convertedTorrent.season === episode.season &&
         convertedTorrent.episode === episode.episode &&
