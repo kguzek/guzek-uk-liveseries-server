@@ -170,7 +170,8 @@ export class TorrentClient {
       try {
         convertedTorrent = convertTorrentInfo(torrent);
       } catch (error) {
-        logger.warn("Skipping invalid torrent:", error);
+        if (!(error instanceof Error)) throw error;
+        logger.warn(`Skipping invalid torrent: ${error.message}`);
         return false;
       }
       return (
