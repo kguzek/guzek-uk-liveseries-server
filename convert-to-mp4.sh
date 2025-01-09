@@ -1,8 +1,7 @@
 #!/usr/bin/bash
 
-DAEMON_DIR="/var/lib/transmission-daemon"
-LOG_FILE="$DAEMON_DIR/script-done.log"
-MKV_PATTERN='\.mkv$'
+LOG_FILE="/var/log/guzek-uk/transmission-script-done.log"
+VIDEO_PATTERN='\.(mkv|avi)$'
 
 if [[ $TR_TORRENT_NAME = "" ]]; then
   FILE="$1"
@@ -42,14 +41,14 @@ log "File '$FILE' has finished downloading"
 if [[ -d $FILE ]]; then
   log "This file is a directory, iterating contents"
   for filename in "$FILE"/*; do
-    if [[ $filename =~ $MKV_PATTERN ]]; then
+    if [[ $filename =~ $VIDEO_PATTERN ]]; then
       convert "$filename"
       break
     fi
   done
   log "Done iterating"
 elif [[ -f $FILE ]]; then
-  if [[ $FILE =~ $MKV_PATTERN ]]; then
+  if [[ $FILE =~ $VIDEO_PATTERN ]]; then
     convert "$FILE"
   else
     log "Standalone file is not a video file"
