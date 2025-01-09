@@ -180,7 +180,19 @@ export class TorrentClient {
       path: TORRENT_DOWNLOAD_PATH,
     });
     const freeBytes = resFreeSpace.arguments["size-bytes"];
-    if (!freeBytes) return null;
+    if (!freeBytes) {
+      logger.error("Invalid free space value", resFreeSpace);
+      return null;
+    }
+    if (freeBytes < 0) {
+      logger.error(
+        `Invalid free space value, path: ${TORRENT_DOWNLOAD_PATH}, reason: ${
+          (resFreeSpace as any).result
+        }`,
+        resFreeSpace
+      );
+      return null;
+    }
     const freeKebiBytes = Math.floor(freeBytes / 1024);
     if (freeKebiBytes < MIN_REQUIRED_KEBIBYTES) {
       logger.error(
