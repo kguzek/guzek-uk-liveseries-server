@@ -14,11 +14,13 @@ services:
     healthcheck:
       test: [ "CMD", "mariadb", "-h", "localhost", "-u${MY_SQL_DB_USER}", "-p${MY_SQL_DB_PASSWORD}", "-e", "SELECT 1" ]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 3
-      start_period: 10s
+      start_period: 5s
   transmission:
-    image: lscr.io/linuxserver/transmission:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.transmission
     container_name: transmission
     restart: always
     environment:
@@ -43,7 +45,9 @@ services:
       - 51413:51413
       - 51413:51413/udp
   server:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.server
     container_name: liveseries
     restart: always
     environment:
