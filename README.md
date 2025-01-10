@@ -64,7 +64,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
     cp whitelist{.template,}.json
     ```
 
-    Add your UUID to the array. The UUID that is there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Administrator UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
+    Add your UUID to the array. The UUID that is there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Cron User UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
 
     ```json
     ["55d914eb-6cfb-4ddf-bc08-443d64191cfc", "a5260d6a-7275-4d86-bcd7-fd5372827ff5"]
@@ -173,7 +173,7 @@ The manual installation involves more steps than the docker compose method, but 
     ```
 
 12. Optional: remove the [`--max-old-space-size=192`](https://stackoverflow.com/questions/48387040/how-do-i-determine-the-correct-max-old-space-size-for-node-js) from `package.json` (for better performance)
-13. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in administrator UUID to add to the whitelist.
+13. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
 
     ```bash
     cp whitelist{.template,}.json
@@ -193,7 +193,7 @@ The manual installation involves more steps than the docker compose method, but 
 
 ### Automatic unwatched episodes checking
 
-The central Guzek UK API has a CRON job set up to check each user's unwatched episodes every six hours, so there is no recurring task on this self-hosted server. If you wish to use this feature, simply add the administrator user UUID to your whitelist, too:
+The central Guzek UK API has a CRON job set up to check each user's unwatched episodes every six hours, so there is no recurring task on this self-hosted server. If you wish to use this feature, simply add the CRON user UUID to your whitelist, too:
 
 ```text
 a5260d6a-7275-4d86-bcd7-fd5372827ff5
