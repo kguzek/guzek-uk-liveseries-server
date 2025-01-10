@@ -45,11 +45,16 @@ export function sendWebsocketMessage() {
   }
 }
 
+class EpisodeAlreadyDownloadedError extends Error {}
+
 async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
   const { showName, ...where } = data;
   const result = await DownloadedEpisode.findOne({ where });
-  logger.debug("Result is: " + result);
-  return result ? null : await downloadEpisode(data);
+  // logger.debug("Result is: " + result);
+  if (result) {
+    throw new EpisodeAlreadyDownloadedError();
+  }
+  return downloadEpisode(data);
 }
 
 async function downloadEpisode(
@@ -159,22 +164,32 @@ router.post("/", async (req, res) => {
       : "Request body is missing property `showName`.";
 
   if (errorMessage) return sendError(res, 400, { message: errorMessage });
-
-  const downloadedEpisode = await tryDownloadEpisode({
-    showName,
-    showId,
-    episode,
-    season,
-  });
-  if (downloadedEpisode) return sendOK(res, downloadedEpisode);
-  sendError(res, 400, {
-    message: `Invalid TV show '${showName}' or episode '${serialiseEpisode({
+  const serialised = `'${showName}' ${serialiseEpisode({ episode, season })}`;
+  let downloadedEpisode: ConvertedTorrentInfo | null;
+  try {
+    downloadedEpisode = await tryDownloadEpisode({
+      showName,
+      showId,
       episode,
       season,
-    })}', or it is already downloaded.`,
-  });
+    });
+  } catch (error) {
+    if (!(error instanceof EpisodeAlreadyDownloadedError)) throw error;
+    sendError(res, 409, {
+      message: `Episode ${serialised} is already downloaded.`,
+    });
+    return;
+  }
+  if (downloadedEpisode) {
+    sendOK(res, downloadedEpisode);
+  } else {
+    sendError(res, 400, {
+      message: `Invalid episode ${serialised}`,
+    });
+  }
 });
 
+// DELETE downloaded episode from server
 router.delete("/:showName/:season/:episode", (req, res) =>
   handleTorrentRequest(
     req,
@@ -185,8 +200,7 @@ router.delete("/:showName/:season/:episode", (req, res) =>
 );
 
 // GET all downloaded episodes
-
-const websocketHandler: WebsocketRequestHandler = (ws, req) => {
+router.ws("/ws", (ws, _req) => {
   if (!torrentClient) {
     logger.error(
       "Websocket connection established without active torrent client."
@@ -207,7 +221,7 @@ const websocketHandler: WebsocketRequestHandler = (ws, req) => {
     }
 
     /** The callback to call after a message event which should resolve to the data to be sent back. */
-    let action: (data: any) => Promise<any>;
+    let action: (data: any) => Promise<ConvertedTorrentInfo[]>;
 
     let delayMultiplier = 1;
 
@@ -251,7 +265,7 @@ const websocketHandler: WebsocketRequestHandler = (ws, req) => {
     async function nextMessageCallback() {
       delete currentTimeouts[currentTimeout];
 
-      let data = [];
+      let data: ConvertedTorrentInfo[] = [];
       try {
         data = await action(evt.data);
       } catch (error) {
@@ -261,11 +275,9 @@ const websocketHandler: WebsocketRequestHandler = (ws, req) => {
       ws.send(message);
     }
   });
-};
-
-router.ws("/ws", websocketHandler);
+});
 router.all("/ws", (req, res) => {
   sendError(res, 400, {
-    message: `Websocket upgrade required for path ${req.path}`,
+    message: `Websocket upgrade required for path ${req.path}.`,
   });
 });
