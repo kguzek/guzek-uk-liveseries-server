@@ -37,7 +37,7 @@ const currentTimeouts: Record<number, () => Promise<void>> = {};
 let lastMessageTimestamp = 0;
 
 export function sendWebsocketMessage() {
-  logger.debug("Speeding up websocket message");
+  logger.verbose("Speeding up websocket message");
   lastMessageTimestamp = 0;
   for (const [timeout, callback] of Object.entries(currentTimeouts)) {
     clearTimeout(+timeout);
@@ -50,7 +50,6 @@ class EpisodeAlreadyDownloadedError extends Error {}
 async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
   const { showName, ...where } = data;
   const result = await DownloadedEpisode.findOne({ where });
-  // logger.debug("Result is: " + result);
   if (result) {
     throw new EpisodeAlreadyDownloadedError();
   }
@@ -77,12 +76,13 @@ async function downloadEpisode(
     logger.error("The torrent client is unavailable");
     return null;
   }
+  // TODO: why is this commented out?
   // if (!torrentInfo) {
   //   logger.error(`Adding the torrent to the client failed.`);
   //   return null;
   // }
   await createEntry();
-  logger.info(`Successfully added new torrent.`);
+  logger.info("Successfully added new torrent.");
   sendWebsocketMessage();
   return torrentInfo;
 }
@@ -101,7 +101,7 @@ async function deleteEpisode(
       where: { ...episode, showName: sanitiseShowName(episode.showName) },
     });
   } catch (error) {
-    logger.error(error);
+    logger.error("Could not delete database entry:", error);
     return sendError(res, 500, {
       message: "Could not delete the episode from the database.",
     });
@@ -114,7 +114,7 @@ async function deleteEpisode(
     try {
       await torrentClient.removeTorrent(torrent);
     } catch (error) {
-      logger.error(error);
+      logger.error("Could not remove torrent:", error);
       return sendError(res, 500, {
         message: `An unknown error occured while removing the torrent. The database entry was removed.`,
       });
@@ -216,7 +216,7 @@ router.ws("/ws", (ws, _req) => {
     try {
       evt = JSON.parse(msg.toString());
     } catch (error) {
-      logger.error(`Could not parse websocket message '${msg}'. ${error}`);
+      logger.error(`Could not parse websocket message '${msg}':`, error);
       return;
     }
 
@@ -239,7 +239,8 @@ router.ws("/ws", (ws, _req) => {
             delayMultiplier = 20;
         } else {
           logger.warn(
-            `Received invalid data argument for poll message: '${torrents}'.`
+            `Received invalid data argument for poll message:`,
+            torrents
           );
           delayMultiplier = 5;
         }
@@ -258,7 +259,7 @@ router.ws("/ws", (ws, _req) => {
       WS_MESSAGE_INTERVAL_MS * delayMultiplier - ping
     );
     lastMessageTimestamp = currentTimestamp + delayMs;
-    //logger.debug(`Sending message in ${delayMs / 1000} s`);
+    logger.verbose(`Sending message in ${delayMs / 1000} s`);
     const currentTimeout = +global.setTimeout(nextMessageCallback, delayMs);
     currentTimeouts[currentTimeout] = nextMessageCallback;
 
@@ -269,7 +270,7 @@ router.ws("/ws", (ws, _req) => {
       try {
         data = await action(evt.data);
       } catch (error) {
-        logger.error(error);
+        logger.error("Error while performing websocket action:", error);
       }
       const message = JSON.stringify({ data });
       ws.send(message);

@@ -47,15 +47,19 @@ export async function getSubtitleClient() {
       { headers }
     );
   } catch (error) {
-    logger.error(error);
-    error instanceof AxiosError && logger.debug(error.response?.data);
-    logger.error("Could not reach the OpenSubtitles API");
+    if (error instanceof AxiosError) {
+      logger.error(
+        `Non-OK response from the OpenSubtitles API: ${error.message}`,
+        error.response?.data
+      );
+    } else {
+      logger.error("Network error reaching the OpenSubtitles API", error);
+    }
     return;
   }
   const data = res.data as any;
   if (!data?.base_url || !data.token) {
-    logger.error("Invalid OpenSubtitles API response");
-    logger.debug(data);
+    logger.error("Invalid OpenSubtitles API response:", data);
     return;
   }
   subtitleClient = axios.create({
@@ -67,7 +71,7 @@ export async function getSubtitleClient() {
     },
   });
   logger.info("Logged in to OpenSubtitles API");
-  logger.debug(data.user);
+  logger.verbose("Subtitles API user:", data.user);
 }
 
 export async function downloadSubtitles(
@@ -88,7 +92,7 @@ export async function downloadSubtitles(
     logger.error(`Invalid torrent filename '${filename}'.`);
     return "It looks like subtitles for this TV show are unavailable.";
   }
-  logger.info(`Searching for subtitles '${query}'...`);
+  logger.debug(`Searching for subtitles '${query}'...`);
   try {
     res = await subtitleClient.get("/subtitles", {
       params: {
@@ -99,16 +103,21 @@ export async function downloadSubtitles(
       },
     });
   } catch (error) {
-    logger.error(error);
-    error instanceof AxiosError && logger.debug(error.response?.data);
+    if (axios.isAxiosError(error)) {
+      logger.debug(
+        `Non-OK subtitles response: ${error.message}`,
+        error.response?.data
+      );
+    } else {
+      logger.error("Network error getting subtitles:", error);
+    }
     return "The subtitle service is temporarily unavailable.";
   }
   const data = res?.data as any;
   const resultCount = data?.total_count;
   const results = data?.data as any[];
   if (!Array.isArray(results)) {
-    logger.error("Received malformatted response from OpenSubtitles");
-    logger.debug(res.data);
+    logger.error("Received malformatted response from OpenSubtitles", data);
     return "Subtitles for this episode are temporarily unavailable.";
   }
   if (!resultCount || !results?.length) {
@@ -147,8 +156,14 @@ export async function downloadSubtitles(
       sub_format: "webvtt",
     });
   } catch (error) {
-    logger.error(error);
-    error instanceof AxiosError && logger.debug(error.response?.data);
+    if (axios.isAxiosError(error)) {
+      logger.debug(
+        `Non-OK response while POSTing to subtitles: ${error.message}`,
+        error.response?.data
+      );
+    } else {
+      logger.error("Network error posting subtitles:", error);
+    }
     return "Subtitles for this episode were found but could not be downloaded. Try again later.";
   }
   const url = res.data.link;
@@ -162,13 +177,13 @@ export async function downloadSubtitles(
       responseType: "stream",
     });
   } catch (error) {
-    logger.error(error);
+    logger.error(`Requst GET ${url} failed:`, error);
     return "Downloading the subtitles failed. Try again later.";
   }
   try {
     await fs.mkdir(directory, { recursive: true });
   } catch (error) {
-    logger.error(error);
+    logger.error(`Error while mkdir ${directory}:`, error);
     return "Could not save the subtitles to the server.";
   }
   const writer = createWriteStream(filepath);
@@ -176,7 +191,7 @@ export async function downloadSubtitles(
     res.data.pipe(writer);
     let errorMessage = "";
     writer.on("error", (error) => {
-      logger.error(error);
+      logger.error("Error while streaming video:", error);
       errorMessage = "Could not save the subtitle file.";
       writer.close();
     });

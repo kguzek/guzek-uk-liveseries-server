@@ -39,7 +39,7 @@ router.get("/:showName/:season/:episode", async (req, res) => {
   try {
     results = await indexer.search(basicEpisode);
   } catch (error) {
-    logger.error(error);
+    logger.error("Error searching for episode:", error);
     sendError(res, 500, { message: "Could not obtain torrent data." });
   }
   if (selectTopResult) {

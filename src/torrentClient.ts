@@ -117,9 +117,16 @@ export class TorrentClient {
         headers: { [SESSION_ID_HEADER_NAME]: this.sessionId ?? "" },
       });
     } catch (error) {
-      res = (error as AxiosError).response;
+      if (!axios.isAxiosError(error)) {
+        logger.error(
+          "Could not obtain a response from the torrent daemon.",
+          error
+        );
+        throw error;
+      }
+      res = error.response;
       if (!res) {
-        logger.error("Could not obtain a response from the torrent daemon.");
+        logger.error("Axios error without response", error);
         throw error;
       }
       if (method !== "session-get") {
@@ -140,7 +147,7 @@ export class TorrentClient {
   private async getTorrents() {
     const response = await this.fetch("torrent-get", { fields: FIELDS });
     if (!response.arguments) {
-      logger.error("Invalid response " + JSON.stringify(response));
+      logger.error("Invalid response:", response);
       return [];
     }
     return response.arguments.torrents;
@@ -188,7 +195,7 @@ export class TorrentClient {
     });
     const freeBytes = resFreeSpace.arguments["size-bytes"];
     if (!freeBytes) {
-      logger.error("Invalid free space value", resFreeSpace);
+      logger.error("Invalid free space response", resFreeSpace);
       return null;
     }
     if (freeBytes < 0) {
@@ -229,6 +236,6 @@ export class TorrentClient {
     const resRemoveTorrent = await this.fetch("torrent-remove", {
       id: torrent.id,
     });
-    logger.debug(JSON.stringify(resRemoveTorrent));
+    logger.debug("Removed torrent:", resRemoveTorrent);
   }
 }

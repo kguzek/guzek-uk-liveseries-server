@@ -121,12 +121,21 @@ export abstract class TorrentIndexer {
         },
       });
     } catch (error) {
-      logger.error(error);
+      if (axios.isAxiosError(error)) {
+        logger.error(
+          `Non-OK response from the torrent indexer: ${error.message}`,
+          error.response?.data
+        );
+      } else {
+        logger.error(`Failed to GET ${url}:`, error);
+      }
       return null;
     }
     if (typeof res.data !== "string") {
-      logger.error("Received non-string HTML content from torrent indexer");
-      logger.debug(res.data);
+      logger.error(
+        "Received non-string HTML content from torrent indexer:",
+        res.data
+      );
       return null;
     }
     return parse(res.data);
@@ -253,8 +262,7 @@ export abstract class TableStyledTorrentIndexer extends TorrentIndexer {
       });
       this.fixResultProperties?.(result, columns);
       if (result.type !== "TV") {
-        logger.debug("Discarding non-TV result");
-        logger.debug(result);
+        logger.debug("Discarding non-TV result", result);
         continue;
       }
       results.push(result as SearchResult);
