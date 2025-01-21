@@ -1,11 +1,11 @@
-import axios, { AxiosError } from "axios";
-import { getLogger } from "guzek-uk-common/logger";
-import {
+import axios from "axios";
+import { getLogger } from "guzek-uk-common/lib/logger";
+import type {
   TorrentInfo,
   BasicEpisode,
   ConvertedTorrentInfo,
 } from "guzek-uk-common/models";
-import { convertTorrentInfo } from "guzek-uk-common/util";
+import { convertTorrentInfo } from "guzek-uk-common/lib/util";
 import { TORRENT_DOWNLOAD_PATH } from "./config";
 
 const SESSION_ID_HEADER_NAME = "X-Transmission-Session-Id";

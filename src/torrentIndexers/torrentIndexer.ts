@@ -1,11 +1,12 @@
 /** Base torrent indexer interface and utility functions for specific services to implement. */
 
 import axios from "axios";
-import parse, { HTMLElement, Node } from "node-html-parser";
-import { getLogger } from "guzek-uk-common/logger";
-import { BasicEpisode } from "guzek-uk-common/models";
-import { sanitiseShowName } from "guzek-uk-common/sequelize";
-import { serialiseEpisode } from "guzek-uk-common/util";
+import parse from "node-html-parser";
+import type { HTMLElement, Node } from "node-html-parser";
+import { getLogger } from "guzek-uk-common/lib/logger";
+import type { BasicEpisode } from "guzek-uk-common/models";
+import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
+import { serialiseEpisode } from "guzek-uk-common/lib/util";
 
 const logger = getLogger(__filename);
 

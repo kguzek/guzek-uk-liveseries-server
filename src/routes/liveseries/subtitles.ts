@@ -1,21 +1,15 @@
 import express, { Request, Response } from "express";
 
 import fs from "fs/promises";
-import {
-  BasicEpisode,
-  STATIC_CACHE_DURATION_MINS,
-} from "guzek-uk-common/models";
+import type { BasicEpisode } from "guzek-uk-common/models";
+import { STATIC_CACHE_DURATION_MINS } from "guzek-uk-common/enums";
 import {
   downloadSubtitles,
   getSubtitleClient,
   SUBTITLES_DEFAULT_LANGUAGE,
 } from "../../subtitles";
-import {
-  getStatusText,
-  logResponse,
-  sendError,
-  setCacheControl,
-} from "guzek-uk-common/util";
+import { logResponse, sendError } from "guzek-uk-common/lib/http";
+import { setCacheControl, getStatusText } from "guzek-uk-common/lib/util";
 import {
   handleTorrentRequest,
   searchForDownloadedEpisode,

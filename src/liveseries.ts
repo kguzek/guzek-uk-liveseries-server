@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import fs from "fs/promises";
-import { getLogger } from "guzek-uk-common/logger";
+import { getLogger } from "guzek-uk-common/lib/logger";
 import { BasicEpisode, TorrentInfo } from "guzek-uk-common/models";
-import { sanitiseShowName } from "guzek-uk-common/sequelize";
+import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
 import {
-  sendError,
   serialiseEpisode,
   validateNaturalNumber,
-} from "guzek-uk-common/util";
+} from "guzek-uk-common/lib/util";
+import { sendError } from "guzek-uk-common/lib/http";
 import { TORRENT_DOWNLOAD_PATH } from "./config";
 import { TorrentClient } from "./torrentClient";
 import { ObjectEncodingOptions } from "fs";

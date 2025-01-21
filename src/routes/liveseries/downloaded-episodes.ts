@@ -1,21 +1,23 @@
-import express, { Request, Response } from "express";
-import expressWs, { WebsocketRequestHandler } from "express-ws";
+import express, { Response } from "express";
+import expressWs from "express-ws";
 import fs from "fs/promises";
-import { getLogger } from "guzek-uk-common/logger";
-import {
+import { getLogger } from "guzek-uk-common/lib/logger";
+import { DownloadStatus } from "guzek-uk-common/enums";
+import type {
   BasicEpisode,
   BasicTvShow,
   ConvertedTorrentInfo,
-  DownloadStatus,
   TorrentInfo,
 } from "guzek-uk-common/models";
-import { DownloadedEpisode, sanitiseShowName } from "guzek-uk-common/sequelize";
 import {
-  sendError,
-  sendOK,
+  DownloadedEpisode,
+  sanitiseShowName,
+} from "guzek-uk-common/lib/sequelize";
+import { sendError, sendOK } from "guzek-uk-common/lib/http";
+import {
   serialiseEpisode,
   validateNaturalNumber,
-} from "guzek-uk-common/util";
+} from "guzek-uk-common/lib/util";
 import { TorrentIndexer } from "../../torrentIndexers/torrentIndexer";
 import { Eztv } from "../../torrentIndexers/eztv";
 import {

@@ -1,5 +1,5 @@
 import express from "express";
-import { sendFileStream } from "guzek-uk-common/util";
+import { sendFileStream } from "guzek-uk-common/lib/http";
 import {
   handleTorrentRequest,
   searchForDownloadedEpisode,

@@ -1,8 +1,8 @@
 import express from "express";
 import expressWs from "express-ws";
-import { setupEnvironment } from "guzek-uk-common/setup";
+import { setupEnvironment } from "guzek-uk-common/lib/setup";
 const debugMode = setupEnvironment(true);
-import { startServer } from "guzek-uk-common/server";
+import { startServer } from "guzek-uk-common/lib/server";
 import { getMiddleware } from "guzek-uk-common/middleware";
 import { getWhitelistMiddleware } from "./src/middleware/whitelist";
 import { initialiseTorrentClient } from "./src/liveseries";

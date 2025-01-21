@@ -1,8 +1,9 @@
 import { NextFunction, Response } from "express";
 import { CustomRequest, UserObj } from "guzek-uk-common/models";
-import { sendError, StatusCode } from "guzek-uk-common/util";
+import { sendError } from "guzek-uk-common/lib/http";
+import { getLogger } from "guzek-uk-common/lib/logger";
+import type { StatusCode } from "guzek-uk-common/models";
 import whitelist from "../../whitelist.json";
-import { getLogger } from "guzek-uk-common/logger";
 
 const logger = getLogger(__filename);
 
