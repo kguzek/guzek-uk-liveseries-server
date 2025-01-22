@@ -1,11 +1,14 @@
 import { NextFunction, Response } from "express";
 import { CustomRequest, UserObj } from "guzek-uk-common/models";
-import { sendError } from "guzek-uk-common/lib/http";
+import { isLanRequest, sendError } from "guzek-uk-common/lib/http";
 import { getLogger } from "guzek-uk-common/lib/logger";
 import type { StatusCode } from "guzek-uk-common/models";
 import whitelist from "../../whitelist.json";
 
 const logger = getLogger(__filename);
+
+const ALLOW_LAN_BYPASS =
+  process.env.ALLOW_UNAUTHENTICATED_LAN_REQUESTS === "true";
 
 function isWhitelisted(user: UserObj) {
   return whitelist.includes(user.username);
@@ -28,11 +31,13 @@ export function getWhitelistMiddleware(debugMode: boolean) {
   return function (req: CustomRequest, res: Response, next: NextFunction) {
     if (whitelistDisabled) return next();
 
+    if (req.path === "/health") return next();
+
+    if (ALLOW_LAN_BYPASS && isLanRequest(req)) return next();
+
     function reject(code: StatusCode, message: string) {
       sendError(res, code, { message });
     }
-
-    if (req.path === "/health") return next();
 
     if (!req.user) {
       return reject(401, "You must be authorised to access this resource.");
