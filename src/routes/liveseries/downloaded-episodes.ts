@@ -7,13 +7,14 @@ import type {
   BasicEpisode,
   BasicTvShow,
   ConvertedTorrentInfo,
+  CustomRequest,
   TorrentInfo,
 } from "guzek-uk-common/models";
 import {
   DownloadedEpisode,
   sanitiseShowName,
 } from "guzek-uk-common/lib/sequelize";
-import { sendError, sendOK } from "guzek-uk-common/lib/http";
+import { getRequestIp, sendError, sendOK } from "guzek-uk-common/lib/http";
 import {
   serialiseEpisode,
   validateNaturalNumber,
@@ -202,7 +203,7 @@ router.delete("/:showName/:season/:episode", (req, res) =>
 );
 
 // GET all downloaded episodes
-router.ws("/ws", (ws, _req) => {
+router.ws("/ws", (ws, req: CustomRequest) => {
   if (!torrentClient) {
     logger.error(
       "Websocket connection established without active torrent client."
@@ -210,6 +211,7 @@ router.ws("/ws", (ws, _req) => {
     return;
   }
 
+  const username = req.user?.username ?? "<anonymous>";
   lastMessageTimestamp = 0;
 
   ws.on("message", (msg) => {
@@ -277,6 +279,19 @@ router.ws("/ws", (ws, _req) => {
       const message = JSON.stringify({ data });
       ws.send(message);
     }
+  });
+
+  ws.on("close", () => {
+    logger.http(
+      `Websocket connection with ${getRequestIp(req)} (${username}) closed.`
+    );
+  });
+
+  ws.on("error", (error) => {
+    logger.error(
+      `Websocket error with ${getRequestIp(req)} (${username}):`,
+      error
+    );
   });
 });
 router.all("/ws", (req, res) => {
