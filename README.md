@@ -172,22 +172,42 @@ The manual installation involves more steps than the docker compose method, but 
     npm run compile
     ```
 
-12. Optional: remove the [`--max-old-space-size=192`](https://stackoverflow.com/questions/48387040/how-do-i-determine-the-correct-max-old-space-size-for-node-js) from `package.json` (for better performance)
-13. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
+12. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
 
     ```bash
     cp whitelist{.template,}.json
     vi whitelist.json
     ```
 
-14. Run the server:
+13. Run the server:
 
     ```bash
     npm run prod
     ```
 
-15. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port `5021` to whatever external port you choose)
-16. Add the URL of your server to your Guzek UK profile (for same-network access you can use a local address like `http://10.0.0.10:5021` or even `http://localhost:5021` -- requests are all made through the browser)
+14. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port `5021` to whatever external port you choose)
+15. Add the URL of your server to your Guzek UK profile (for same-network access you can use a local address like `http://10.0.0.10:5021` or even `http://localhost:5021` -- requests are all made through the browser)
+
+## FAQ
+
+### #1 How to update the server
+
+In order to update your installation, you will first need to navigate to the location you cloned the repository to and pull the origin.
+
+```bash
+cd guzek-uk-liveseries-server
+git pull
+```
+
+Then, assuming you installed via docker compose, all you have to do is re-build the `server` container. This works even if the container is currently running!
+
+```bash
+sudo docker compose up -d --build server
+```
+
+### #2 How to update the whitelist
+
+The steps to updating the whitelist are almost the same as updating the server. Instead of running `git pull`, simply edit the `whitelist.json`, and then re-build the server using the same command as above.
 
 ## Other features
 
