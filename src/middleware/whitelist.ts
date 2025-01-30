@@ -44,6 +44,7 @@ export function getWhitelistMiddleware(debugMode: boolean) {
     }
     if (!req.user.admin && !isWhitelisted(req.user)) {
       reject(403, "You do not have permission to access this resource.");
+      logger.info(`Non-whitelisted user attempted access: ${req.user.uuid} (${req.user.username})`);
       return;
     }
     next();
