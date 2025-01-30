@@ -11,7 +11,7 @@ const ALLOW_LAN_BYPASS =
   process.env.ALLOW_UNAUTHENTICATED_LAN_REQUESTS === "true";
 
 function isWhitelisted(user: UserObj) {
-  return whitelist.includes(user.username);
+  return whitelist.includes(user.uuid);
 }
 
 export function getWhitelistMiddleware(debugMode: boolean) {
@@ -44,7 +44,9 @@ export function getWhitelistMiddleware(debugMode: boolean) {
     }
     if (!req.user.admin && !isWhitelisted(req.user)) {
       reject(403, "You do not have permission to access this resource.");
-      logger.info(`Non-whitelisted user attempted access: ${req.user.uuid} (${req.user.username})`);
+      logger.info(
+        `Non-whitelisted user attempted access: ${req.user.uuid} (${req.user.username})`
+      );
       return;
     }
     next();
