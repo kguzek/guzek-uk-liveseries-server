@@ -5,8 +5,11 @@ import {
   searchForDownloadedEpisode,
 } from "../../liveseries";
 import { TORRENT_DOWNLOAD_PATH } from "../../config";
+import { getLogger } from "guzek-uk-common/lib/logger";
 
 export const router = express.Router();
+
+const logger = getLogger(__filename);
 
 router.get("/:showName/:season/:episode", (req, res) =>
   handleTorrentRequest(
@@ -19,6 +22,7 @@ router.get("/:showName/:season/:episode", (req, res) =>
         episode,
         !!req.query.allow_non_mp4
       );
+      logger.info(`Backup video search result: '${filename}'`);
       if (!filename) return;
       sendFileStream(req, res, filename);
     }

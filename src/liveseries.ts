@@ -21,6 +21,7 @@ const RECURSIVE_READ_OPTIONS = {
   recursive: true,
 } as ObjectEncodingOptions;
 
+/** Converts periods and plus symbols into spaces, removes `:/` sequences, and turns to lowercase. */
 const parseFilename = (filename: string) =>
   sanitiseShowName(filename).toLowerCase();
 
@@ -43,9 +44,10 @@ export async function searchForDownloadedEpisode(
   episode: BasicEpisode,
   allowAllVideoFiletypes = false
 ) {
-  const search = `${episode.showName} ${serialiseEpisode(episode)}`;
-  const searchLowerCase = search.toLowerCase();
-
+  const search = parseFilename(
+    `${episode.showName} ${serialiseEpisode(episode)}`
+  );
+  logger.debug(`Searching for downloaded episode: '${search}'...`);
   let files: string[];
   try {
     files = await fs.readdir(TORRENT_DOWNLOAD_PATH, RECURSIVE_READ_OPTIONS);
@@ -57,7 +59,7 @@ export async function searchForDownloadedEpisode(
   }
   const match = files.find(
     (file) =>
-      parseFilename(file).startsWith(searchLowerCase) &&
+      parseFilename(file).startsWith(search) &&
       getVideoExtension(file) != null &&
       (allowAllVideoFiletypes || file.endsWith(".mp4"))
   );

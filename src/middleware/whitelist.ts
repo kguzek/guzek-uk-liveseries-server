@@ -10,6 +10,8 @@ const logger = getLogger(__filename);
 const ALLOW_LAN_BYPASS =
   process.env.ALLOW_UNAUTHENTICATED_LAN_REQUESTS === "true";
 
+const PUBLIC_PATHS = ["/health", "/favicon.ico"];
+
 function isWhitelisted(user: UserObj) {
   return whitelist.includes(user.uuid);
 }
@@ -31,7 +33,7 @@ export function getWhitelistMiddleware(debugMode: boolean) {
   return function (req: CustomRequest, res: Response, next: NextFunction) {
     if (whitelistDisabled) return next();
 
-    if (req.path === "/health") return next();
+    if (PUBLIC_PATHS.includes(req.path)) return next();
 
     if (ALLOW_LAN_BYPASS && isLanRequest(req)) return next();
 
