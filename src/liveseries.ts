@@ -12,6 +12,7 @@ import { sendError } from "guzek-uk-common/lib/http";
 import { TORRENT_DOWNLOAD_PATH } from "./config";
 import { TorrentClient } from "./torrentClient";
 import { ObjectEncodingOptions } from "fs";
+import { basename } from "path";
 
 const logger = getLogger(__filename);
 
@@ -59,7 +60,7 @@ export async function searchForDownloadedEpisode(
   }
   const match = files.find(
     (file) =>
-      parseFilename(file).startsWith(search) &&
+      parseFilename(basename(file)).startsWith(search) &&
       getVideoExtension(file) != null &&
       (allowAllVideoFiletypes || file.endsWith(".mp4"))
   );
@@ -78,7 +79,7 @@ export async function handleTorrentRequest(
     torrent: TorrentInfo,
     episode: BasicEpisode
   ) => void | Promise<void>,
-  torrentNotFoundCallback?: (episode: BasicEpisode) => void | Promise<void>
+  torrentNotFoundCallback: (episode: BasicEpisode) => void | Promise<void>
 ) {
   const showName = req.params.showName;
   const season = +req.params.season;
@@ -110,15 +111,13 @@ export async function handleTorrentRequest(
   } else {
     logger.debug(`Torrent not found: ${serialized}`);
   }
-  if (torrentNotFoundCallback) {
-    try {
-      await torrentNotFoundCallback(basicEpisode);
-      return;
-    } catch (error) {
-      if (!(error instanceof EpisodeNotFoundError))
-        logger.error("Error while searching for torrent:", error);
-      // Continue to the 404 response
-    }
+  try {
+    await torrentNotFoundCallback(basicEpisode);
+    return;
+  } catch (error) {
+    if (!(error instanceof EpisodeNotFoundError))
+      logger.error("Error while searching for torrent:", error);
+    // Continue to the 404 response
   }
   return sendError(res, 404, {
     message: `Episode ${serialized} was not found in the downloads.`,
