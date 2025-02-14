@@ -283,7 +283,8 @@ router.ws("/ws", (ws, req: CustomRequest) => {
 
   ws.on("close", (event) => {
     logger.http(
-      `Websocket connection with ${getRequestIp(req)} (${username}) closed.`, event
+      `Websocket connection with ${getRequestIp(req)} (${username}) closed.`,
+      event
     );
   });
 

@@ -4,6 +4,7 @@ import { getLogger } from "guzek-uk-common/lib/logger";
 import { BasicEpisode, TorrentInfo } from "guzek-uk-common/models";
 import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
 import {
+  getVideoExtension,
   serialiseEpisode,
   validateNaturalNumber,
 } from "guzek-uk-common/lib/util";
@@ -33,10 +34,14 @@ export class EpisodeNotFoundError extends Error {}
  * The episode's show name must be sanitised before calling this function.
  * Sends a 500 response if the folder could not be read.
  * Throws an `Error` if the episode is not found, which must be handled.
+ * @param res The response object
+ * @param episode The episode to search for
+ * @param allowAllVideoFiletypes Whether to allow all video filetypes, or only `.mp4`
  */
 export async function searchForDownloadedEpisode(
   res: Response,
-  episode: BasicEpisode
+  episode: BasicEpisode,
+  allowAllVideoFiletypes = false
 ) {
   const search = `${episode.showName} ${serialiseEpisode(episode)}`;
   const searchLowerCase = search.toLowerCase();
@@ -52,7 +57,9 @@ export async function searchForDownloadedEpisode(
   }
   const match = files.find(
     (file) =>
-      parseFilename(file).startsWith(searchLowerCase) && file.endsWith(".mp4")
+      parseFilename(file).startsWith(searchLowerCase) &&
+      getVideoExtension(file) != null &&
+      (allowAllVideoFiletypes || file.endsWith(".mp4"))
   );
   if (match) return TORRENT_DOWNLOAD_PATH + match;
   throw new EpisodeNotFoundError();
