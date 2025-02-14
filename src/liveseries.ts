@@ -97,6 +97,9 @@ export async function handleTorrentRequest(
     });
   }
   basicEpisode.showName = sanitiseShowName(basicEpisode.showName);
+  const serialized = `'${basicEpisode.showName} ${serialiseEpisode(
+    basicEpisode
+  )}'`;
   if (torrent) {
     try {
       await callback(torrent, basicEpisode);
@@ -105,22 +108,20 @@ export async function handleTorrentRequest(
       if (!(error instanceof EpisodeNotFoundError)) throw error;
     }
   } else {
-    if (torrentNotFoundCallback) {
-      try {
-        await torrentNotFoundCallback(basicEpisode);
-        return;
-      } catch (error) {
-        if (!(error instanceof EpisodeNotFoundError))
-          logger.error("Error while searching for torrent:", error);
-        // Continue to the 404 response
-      }
+    logger.debug(`Torrent not found: ${serialized}`);
+  }
+  if (torrentNotFoundCallback) {
+    try {
+      await torrentNotFoundCallback(basicEpisode);
+      return;
+    } catch (error) {
+      if (!(error instanceof EpisodeNotFoundError))
+        logger.error("Error while searching for torrent:", error);
+      // Continue to the 404 response
     }
   }
   return sendError(res, 404, {
-    message: `Episode '${basicEpisode.showName} ${serialiseEpisode({
-      season,
-      episode,
-    })}' was not found in the downloads.`,
+    message: `Episode ${serialized} was not found in the downloads.`,
   });
 }
 
