@@ -192,7 +192,8 @@ The manual installation involves more steps than the docker compose method, but 
 
 ### #1 How to update the server
 
-In order to update your installation, you will first need to navigate to the location you cloned the repository to and pull the origin.
+If the code on [github.com](https://github.com/kguzek/guzek-uk-liveseries-server) was updated since you first installed this program, you may need to update it for critical security fixes as well as new features and bug fixes.
+In order to update your installation, you will first need to navigate to the location to which you cloned the repository and pull the origin.
 
 ```bash
 cd guzek-uk-liveseries-server
@@ -233,7 +234,7 @@ Available query parameters:
 
 - sort_by -- one of the fields you wish to sort by, e.g. `seeders`
 - sort_direction -- `"asc"` or `"ascending"`, defaults to descending
-- select -- `"top_result"`: this returns only the "best" torrent, according to an [arbitrary algorithm](https://github.com/kguzek/guzek-uk-liveseries-server/tree/main/src/torrentIndexers/torrentIndexer.ts#L130). Defaults to returning the whole list of results
+- select -- `"top_result"`: this returns only the "best" torrent, according to my [selection algorithm](https://github.com/kguzek/guzek-uk-liveseries-server/tree/main/src/torrentIndexers/torrentIndexer.ts#L149). Defaults to returning the whole list of results
 
 Example:
 
@@ -243,7 +244,7 @@ curl localhost:5021/liveseries/torrents/[show-name]/[season]/[episode]?sort_by=s
 
 ## Copyright
 
-Copyright © 2024-Present by Konrad Guzek
+Copyright © 2024-2025 by Konrad Guzek
 
 This file is part of the Guzek UK LiveSeries Server.
 
