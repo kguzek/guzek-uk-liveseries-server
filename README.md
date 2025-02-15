@@ -166,17 +166,17 @@ The manual installation involves more steps than the docker compose method, but 
     ```
 
 10. Optional (for automatic subtitle downloading): create an account at `opensubtitles.com` and [create a developer API consumer](https://www.opensubtitles.com/en/consumers). Then, store your OpenSubtitles API key in `.env` as `SUBTITLES_API_KEY_DEV`; I haven't figured out how to use the production keys yet (ignore the other `SUBTITLES_API_*` fields)
-11. Transpile the TypeScript code into JavaScript:
-
-    ```bash
-    npm run compile
-    ```
-
-12. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
+11. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
 
     ```bash
     cp whitelist{.template,}.json
     vi whitelist.json
+    ```
+
+12. Transpile the TypeScript code into JavaScript:
+
+    ```bash
+    npm run compile
     ```
 
 13. Run the server:
