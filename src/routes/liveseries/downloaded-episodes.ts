@@ -60,12 +60,12 @@ async function tryDownloadEpisode(data: BasicTvShow & BasicEpisode) {
 }
 
 async function downloadEpisode(
-  data: BasicTvShow & BasicEpisode
+  data: BasicTvShow & BasicEpisode,
 ): Promise<ConvertedTorrentInfo | null> {
   const result = await torrentIndexer.findTopResult(data);
   if (!result || !result.link) {
     logger.error(
-      "Search query turned up empty. Either no torrents available, or indexer is outdated."
+      "Search query turned up empty. Either no torrents available, or indexer is outdated.",
     );
     return null;
   }
@@ -93,10 +93,10 @@ async function downloadEpisode(
 async function deleteEpisode(
   res: Response,
   episode: BasicEpisode,
-  torrent?: TorrentInfo
+  torrent?: TorrentInfo,
 ) {
   logger.info(
-    `Deleting episode '${episode.showName}' ${serialiseEpisode(episode)}`
+    `Deleting episode '${episode.showName}' ${serialiseEpisode(episode)}`,
   );
   let destroyedRows;
   try {
@@ -159,10 +159,10 @@ router.post("/", async (req, res) => {
   const episode = +req.body?.episode;
 
   const errorMessage =
-    validateNaturalNumber(showId) ??
+    (validateNaturalNumber(showId) ??
     validateNaturalNumber(season) ??
     validateNaturalNumber(episode) ??
-    showName
+    showName)
       ? null
       : "Request body is missing property `showName`.";
 
@@ -198,15 +198,15 @@ router.delete("/:showName/:season/:episode", (req, res) =>
     req,
     res,
     (torrent, episode) => deleteEpisode(res, episode, torrent),
-    (episode) => deleteEpisode(res, episode)
-  )
+    (episode) => deleteEpisode(res, episode),
+  ),
 );
 
 // GET all downloaded episodes
 router.ws("/ws", (ws, req: CustomRequest) => {
   if (!torrentClient) {
     logger.error(
-      "Websocket connection established without active torrent client."
+      "Websocket connection established without active torrent client.",
     );
     return;
   }
@@ -237,21 +237,21 @@ router.ws("/ws", (ws, req: CustomRequest) => {
         if (torrents && Array.isArray(torrents)) {
           if (
             !torrents.find(
-              (torrent) => torrent.status !== DownloadStatus.COMPLETE
+              (torrent) => torrent.status !== DownloadStatus.COMPLETE,
             )
           )
             delayMultiplier = 20;
         } else {
           logger.warn(
             `Received invalid data argument for poll message:`,
-            torrents
+            torrents,
           );
           delayMultiplier = 5;
         }
         break;
       default:
         logger.warn(
-          `Unknown message type '${evt.type}' received in websocket connection.`
+          `Unknown message type '${evt.type}' received in websocket connection.`,
         );
         return;
     }
@@ -260,7 +260,7 @@ router.ws("/ws", (ws, req: CustomRequest) => {
     const ping = Math.max(0, currentTimestamp - lastMessageTimestamp);
     const delayMs = Math.max(
       0,
-      WS_MESSAGE_INTERVAL_MS * delayMultiplier - ping
+      WS_MESSAGE_INTERVAL_MS * delayMultiplier - ping,
     );
     lastMessageTimestamp = currentTimestamp + delayMs;
     logger.verbose(`Sending message in ${delayMs / 1000} s`);
@@ -284,14 +284,14 @@ router.ws("/ws", (ws, req: CustomRequest) => {
   ws.on("close", (event) => {
     logger.http(
       `Websocket connection with ${getRequestIp(req)} (${username}) closed.`,
-      event
+      event,
     );
   });
 
   ws.on("error", (error) => {
     logger.error(
       `Websocket error with ${getRequestIp(req)} (${username}):`,
-      error
+      error,
     );
   });
 });

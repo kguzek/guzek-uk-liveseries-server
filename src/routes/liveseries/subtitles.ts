@@ -27,7 +27,7 @@ async function getSubtitles(
   req: Request,
   res: Response,
   episode: BasicEpisode,
-  filename: string
+  filename: string,
 ) {
   const directory = `${SUBTITLES_PATH}/${episode.showName}/${episode.season}/${episode.episode}`;
   const filepath = `${directory}/${SUBTITLES_FILENAME}`;
@@ -45,7 +45,7 @@ async function getSubtitles(
       filepath,
       filename,
       episode,
-      language
+      language,
     );
     if (errorMessage) {
       sendError(res, 400, { message: errorMessage });
@@ -69,10 +69,10 @@ router.get("/:showName/:season/:episode", (req, res) =>
         req,
         res,
         episode,
-        filename.replace(TORRENT_DOWNLOAD_PATH, "")
+        filename.replace(TORRENT_DOWNLOAD_PATH, ""),
       );
-    }
-  )
+    },
+  ),
 );
 
 export function init() {

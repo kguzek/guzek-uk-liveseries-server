@@ -40,14 +40,14 @@ type Method =
 type TorrentResponse<T extends Method> = T extends "session-get"
   ? string
   : T extends "torrent-get"
-  ? { arguments: { torrents: TorrentInfo[] } }
-  : T extends "free-space"
-  ? { arguments: { "size-bytes": number } }
-  : T extends "torrent-add"
-  ? { arguments: { "torrent-added"?: TorrentInfo } }
-  : T extends "torrent-remove"
-  ? { arguments: {} }
-  : { arguments: Record<string, any> };
+    ? { arguments: { torrents: TorrentInfo[] } }
+    : T extends "free-space"
+      ? { arguments: { "size-bytes": number } }
+      : T extends "torrent-add"
+        ? { arguments: { "torrent-added"?: TorrentInfo } }
+        : T extends "torrent-remove"
+          ? { arguments: {} }
+          : { arguments: Record<string, any> };
 
 type ExemptMethod = "session-get" | "session-stats";
 
@@ -120,7 +120,7 @@ export class TorrentClient {
       if (!axios.isAxiosError(error)) {
         logger.error(
           "Could not obtain a response from the torrent daemon.",
-          error
+          error,
         );
         throw error;
       }
@@ -147,7 +147,7 @@ export class TorrentClient {
   private async getTorrents() {
     const response = await this.fetch("torrent-get", { fields: FIELDS });
     if (!response.arguments) {
-      logger.error("Invalid response:", response);
+      logger.error("Invalid response:", Object.keys(response));
       return [];
     }
     return response.arguments.torrents;
@@ -203,14 +203,14 @@ export class TorrentClient {
         `Invalid free space value, path: ${TORRENT_DOWNLOAD_PATH}, reason: ${
           (resFreeSpace as any).result
         }`,
-        resFreeSpace
+        resFreeSpace,
       );
       return null;
     }
     const freeKebiBytes = Math.floor(freeBytes / 1024);
     if (freeKebiBytes < MIN_REQUIRED_KEBIBYTES) {
       logger.error(
-        `Not enough free space to download torrent. Free space: ${freeKebiBytes} KiB`
+        `Not enough free space to download torrent. Free space: ${freeKebiBytes} KiB`,
       );
       return null;
     }
@@ -223,7 +223,7 @@ export class TorrentClient {
     const torrent = resTorrentAdd.arguments["torrent-added"];
     if (!torrent) {
       logger.info(
-        "Duplicate file; no torrents added. Creating database entry."
+        "Duplicate file; no torrents added. Creating database entry.",
       );
       if (createEntry) await createEntry();
       return null;

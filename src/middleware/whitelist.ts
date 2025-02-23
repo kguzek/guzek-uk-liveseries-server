@@ -22,11 +22,11 @@ export function getWhitelistMiddleware(debugMode: boolean) {
 
   if (whitelistDisabled) {
     logger.warn(
-      "Whitelist is disabled: all users will be able to access this server. Do not use this setting in production!"
+      "Whitelist is disabled: all users will be able to access this server. Do not use this setting in production!",
     );
   } else {
     logger.info(
-      "Whitelist is enabled: only specific, authenticated users can access this server."
+      "Whitelist is enabled: only specific, authenticated users can access this server.",
     );
   }
 
@@ -47,7 +47,7 @@ export function getWhitelistMiddleware(debugMode: boolean) {
     if (!req.user.admin && !isWhitelisted(req.user)) {
       reject(403, "You do not have permission to access this resource.");
       logger.info(
-        `Non-whitelisted user attempted access: ${req.user.uuid} (${req.user.username})`
+        `Non-whitelisted user attempted access: ${req.user.uuid} (${req.user.username})`,
       );
       return;
     }

@@ -21,11 +21,11 @@ router.get("/:showName/:season/:episode", (req, res) =>
       const filename = await searchForDownloadedEpisode(
         res,
         episode,
-        !!req.query.allow_non_mp4
+        !!req.query.allow_non_mp4,
       );
       logger.info(`Backup video search result: '${filename}'`);
       if (!filename) return;
       sendFileStream(req, res, filename);
-    }
-  )
+    },
+  ),
 );

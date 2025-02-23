@@ -30,4 +30,3 @@ export class Extranet extends TableStyledTorrentIndexer {
     result.link = link;
   }
 }
-

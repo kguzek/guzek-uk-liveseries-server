@@ -125,7 +125,7 @@ export abstract class TorrentIndexer {
       if (axios.isAxiosError(error)) {
         logger.error(
           `Non-OK response from the torrent indexer: ${error.message}`,
-          error.response?.data
+          error.response?.data,
         );
       } else {
         logger.error(`Failed to GET ${url}:`, error);
@@ -135,7 +135,7 @@ export abstract class TorrentIndexer {
     if (typeof res.data !== "string") {
       logger.error(
         "Received non-string HTML content from torrent indexer:",
-        res.data
+        res.data,
       );
       return null;
     }
@@ -162,7 +162,7 @@ export abstract class TorrentIndexer {
     const sigma = standardDeviation(sizes, mean);
     const resultsBySeeders = results.sort((a, b) => b.seeders - a.seeders);
     const resultsWithoutOutliers = resultsBySeeders.filter(
-      (result) => !isOutlier(result.size, mean, sigma)
+      (result) => !isOutlier(result.size, mean, sigma),
     );
     const topResult = resultsWithoutOutliers[0];
     return topResult;
@@ -231,7 +231,7 @@ export abstract class TableStyledTorrentIndexer extends TorrentIndexer {
         continue;
       }
       const columns = (row.childNodes ?? []).filter(
-        (child) => child.nodeType === 1
+        (child) => child.nodeType === 1,
       );
       if (columns.length !== headerCells.length) continue;
       const result: SearchResult = {} as SearchResult;

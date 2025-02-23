@@ -43,10 +43,10 @@ export class EpisodeNotFoundError extends Error {}
 export async function searchForDownloadedEpisode(
   res: Response,
   episode: BasicEpisode,
-  allowAllVideoFiletypes = false
+  allowAllVideoFiletypes = false,
 ) {
   const search = parseFilename(
-    `${episode.showName} ${serialiseEpisode(episode)}`
+    `${episode.showName} ${serialiseEpisode(episode)}`,
   );
   logger.debug(`Searching for downloaded episode: '${search}'...`);
   let files: string[];
@@ -62,7 +62,7 @@ export async function searchForDownloadedEpisode(
     (file) =>
       parseFilename(basename(file)).startsWith(search) &&
       getVideoExtension(file) != null &&
-      (allowAllVideoFiletypes || file.endsWith(".mp4"))
+      (allowAllVideoFiletypes || file.endsWith(".mp4")),
   );
   if (match) return TORRENT_DOWNLOAD_PATH + match;
   throw new EpisodeNotFoundError();
@@ -77,9 +77,9 @@ export async function handleTorrentRequest(
   res: Response,
   callback: (
     torrent: TorrentInfo,
-    episode: BasicEpisode
+    episode: BasicEpisode,
   ) => void | Promise<void>,
-  torrentNotFoundCallback: (episode: BasicEpisode) => void | Promise<void>
+  torrentNotFoundCallback: (episode: BasicEpisode) => void | Promise<void>,
 ) {
   const showName = req.params.showName;
   const season = +req.params.season;
@@ -99,7 +99,7 @@ export async function handleTorrentRequest(
   }
   basicEpisode.showName = sanitiseShowName(basicEpisode.showName);
   const serialized = `'${basicEpisode.showName} ${serialiseEpisode(
-    basicEpisode
+    basicEpisode,
   )}'`;
   if (torrent) {
     try {
@@ -131,10 +131,10 @@ export async function initialiseTorrentClient() {
   } catch (error) {
     logger.error("Initialisation failure:", error);
     logger.warn(
-      "Ensure that your transmission client is running and that the configuration of `.env` is correct."
+      "Ensure that your transmission client is running and that the configuration of `.env` is correct.",
     );
     logger.warn(
-      "The server is operational, but torrent-related requests will fail with HTTP status 503."
+      "The server is operational, but torrent-related requests will fail with HTTP status 503.",
     );
     return;
   }
