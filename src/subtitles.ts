@@ -32,7 +32,7 @@ export async function getSubtitleClient() {
   const password = process.env.SUBTITLES_API_PASSWORD;
   if (!apiKey || !username || !password) {
     logger.error(
-      "No SUBTITLES_API_KEY, SUBTITLES_API_USER or SUBTITLES_API_PASSWORD environment variable set"
+      "No SUBTITLES_API_KEY, SUBTITLES_API_USER or SUBTITLES_API_PASSWORD environment variable set",
     );
     return;
   }
@@ -44,13 +44,13 @@ export async function getSubtitleClient() {
         username,
         password,
       },
-      { headers }
+      { headers },
     );
   } catch (error) {
     if (error instanceof AxiosError) {
       logger.error(
         `Non-OK response from the OpenSubtitles API: ${error.message}`,
-        error.response?.data
+        error.response?.data,
       );
     } else {
       logger.error("Network error reaching the OpenSubtitles API", error);
@@ -79,7 +79,7 @@ export async function downloadSubtitles(
   filepath: string,
   filename: string,
   episode: BasicEpisode,
-  language: string
+  language: string,
 ): Promise<string> {
   if (!subtitleClient)
     return "Subtitles are currently unavailable. Try again later.";
@@ -106,7 +106,7 @@ export async function downloadSubtitles(
     if (axios.isAxiosError(error)) {
       logger.debug(
         `Non-OK subtitles response: ${error.message}`,
-        error.response?.data
+        error.response?.data,
       );
     } else {
       logger.error("Network error getting subtitles:", error);
@@ -124,7 +124,7 @@ export async function downloadSubtitles(
     return "There are no subtitles for this episode.";
   }
   const sorted = results.sort(
-    (a, b) => b.attributes.download_count - a.attributes.download_count
+    (a, b) => b.attributes.download_count - a.attributes.download_count,
   );
   const [closeMatches, farMatches] = sorted.reduce(
     ([close, far], result) =>
@@ -135,7 +135,7 @@ export async function downloadSubtitles(
         : // The 'far' matches don't specify our exact torrent name, but they should be for the same show/season/episode
           // This means that there might be some synchronisation errors, which is why the 'far' results are put to the end
           [close, [...far, result]],
-    [[], []]
+    [[], []],
   );
   // Ensure the close matches are prioritised, but don't throw away the 'far' matches if no close ones have the queried language
   const matches = [...closeMatches, ...farMatches];
@@ -143,7 +143,7 @@ export async function downloadSubtitles(
     matches.find((result) => result.attributes.language === language) ??
     // None of the matches have the right language, so send the default language (English)
     matches.find(
-      (result) => result.attributes.language === SUBTITLES_DEFAULT_LANGUAGE
+      (result) => result.attributes.language === SUBTITLES_DEFAULT_LANGUAGE,
     ) ??
     // Maybe some foreign shows don't even have subtitles in English, so send the most downloaded file there is
     matches[0];
@@ -159,7 +159,7 @@ export async function downloadSubtitles(
     if (axios.isAxiosError(error)) {
       logger.debug(
         `Non-OK response while POSTing to subtitles: ${error.message}`,
-        error.response?.data
+        error.response?.data,
       );
     } else {
       logger.error("Network error posting subtitles:", error);

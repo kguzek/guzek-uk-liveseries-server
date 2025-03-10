@@ -40,14 +40,14 @@ type Method =
 type TorrentResponse<T extends Method> = T extends "session-get"
   ? string
   : T extends "torrent-get"
-    ? { arguments: { torrents: TorrentInfo[] } }
-    : T extends "free-space"
-      ? { arguments: { "size-bytes": number } }
-      : T extends "torrent-add"
-        ? { arguments: { "torrent-added"?: TorrentInfo } }
-        : T extends "torrent-remove"
-          ? { arguments: {} }
-          : { arguments: Record<string, any> };
+  ? { arguments: { torrents: TorrentInfo[] } }
+  : T extends "free-space"
+  ? { arguments: { "size-bytes": number } }
+  : T extends "torrent-add"
+  ? { arguments: { "torrent-added"?: TorrentInfo } }
+  : T extends "torrent-remove"
+  ? { arguments: {} }
+  : { arguments: Record<string, any> };
 
 type ExemptMethod = "session-get" | "session-stats";
 
@@ -118,15 +118,12 @@ export class TorrentClient {
       });
     } catch (error) {
       if (!axios.isAxiosError(error)) {
-        logger.error(
-          "Could not obtain a response from the torrent daemon.",
-          error,
-        );
+        logger.error("Could not obtain a response from the torrent daemon.");
         throw error;
       }
       res = error.response;
       if (!res) {
-        logger.error("Axios error without response", error);
+        logger.error("Axios error without response");
         throw error;
       }
       if (method !== "session-get") {
@@ -195,7 +192,7 @@ export class TorrentClient {
     });
     const freeBytes = resFreeSpace.arguments["size-bytes"];
     if (!freeBytes) {
-      logger.error("Invalid free space response", resFreeSpace);
+      logger.error("Invalid free space response", Object.keys(resFreeSpace));
       return null;
     }
     if (freeBytes < 0) {
