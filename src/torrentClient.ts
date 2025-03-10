@@ -9,7 +9,6 @@ import { convertTorrentInfo } from "guzek-uk-common/lib/util";
 import { TORRENT_DOWNLOAD_PATH } from "./config";
 
 const SESSION_ID_HEADER_NAME = "X-Transmission-Session-Id";
-const SESSION_ID_PATTERN = /<code>X-Transmission-Session-Id: (.+)<\/code>/;
 const FIELDS = [
   "id",
   "name",
@@ -69,13 +68,8 @@ export class TorrentClient {
     this.initPromise = this.init();
   }
 
-  private updateSessionId(resData: string) {
-    this.sessionId = resData.match(SESSION_ID_PATTERN)?.[1];
-  }
-
   private async init() {
-    const resSessionId = await this.fetch("session-get");
-    this.updateSessionId(resSessionId);
+    await this.fetch("session-get");
     if (this.sessionId == null) {
       logger.error("Could not establish the session id.");
       return;
@@ -126,17 +120,19 @@ export class TorrentClient {
         logger.error("Axios error without response");
         throw error;
       }
-      if (method !== "session-get") {
-        if (res.status === 409) {
-          this.updateSessionId(res.data as string);
-          const passed = [args] as T extends ExemptMethod
-            ? []
-            : [args: Record<string, any>];
+      if (res.status === 409) {
+        this.sessionId = res.headers[SESSION_ID_HEADER_NAME.toLowerCase()];
+        const passed = [args] as T extends ExemptMethod
+          ? []
+          : [args: Record<string, any>];
+        if (method !== "session-get") {
           logger.warn("Recursing due to 409 client response");
-          return await this.fetch(method, ...passed);
         }
-        logger.error(`Client response: ${res.status} ${res.statusText}`);
+        return await this.fetch(method, ...passed);
       }
+      logger.error(
+        `Client response to ${method}: ${res.status} ${res.statusText}`,
+      );
     }
     return res.data as TorrentResponse<T>;
   }
