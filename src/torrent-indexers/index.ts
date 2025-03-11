@@ -3,10 +3,9 @@
 import axios from "axios";
 import parse from "node-html-parser";
 import type { HTMLElement, Node } from "node-html-parser";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import type { BasicEpisode } from "guzek-uk-common/models";
-import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
-import { serialiseEpisode } from "guzek-uk-common/lib/util";
+import { getLogger } from "../lib/logger";
+import type { Episode, SearchResult } from "../lib/types";
+import { sanitiseShowName, serialiseEpisode } from "../lib/liveseries";
 
 const logger = getLogger(__filename);
 
@@ -17,18 +16,6 @@ export const SIZE_UNIT_PREFIXES = {
   T: 1e12,
   P: 1e15,
 } as const;
-
-export interface SearchResult {
-  link?: string;
-  name: string;
-  age: string;
-  type: string;
-  files: number;
-  size: number;
-  sizeHuman: string;
-  seeders: number;
-  leechers: number;
-}
 
 export function getAnchorHref(parentNode: Node) {
   if (parentNode.nodeType !== 1) {
@@ -168,7 +155,7 @@ export abstract class TorrentIndexer {
     return topResult;
   }
 
-  async search(episode: BasicEpisode) {
+  async search(episode: Episode) {
     const showName = sanitiseShowName(episode.showName);
     const serialisedEpisode = serialiseEpisode(episode);
     const query = `${showName}-${serialisedEpisode}`
@@ -181,7 +168,7 @@ export abstract class TorrentIndexer {
   }
 
   /** Finds the top torrent result from the API, using `TorrentIndexer.selectTopResult`. */
-  async findTopResult(episode: BasicEpisode) {
+  async findTopResult(episode: Episode) {
     const results = await this.search(episode);
     if (!results || results.length === 0) {
       logger.warn("No search results found.");

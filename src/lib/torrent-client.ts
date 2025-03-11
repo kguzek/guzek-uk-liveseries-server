@@ -1,12 +1,9 @@
 import axios from "axios";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import type {
-  TorrentInfo,
-  BasicEpisode,
-  ConvertedTorrentInfo,
-} from "guzek-uk-common/models";
-import { convertTorrentInfo } from "guzek-uk-common/lib/util";
-import { TORRENT_DOWNLOAD_PATH } from "./config";
+
+import type { ConvertedTorrentInfo, Episode, TorrentInfo } from "./types";
+import { TORRENT_DOWNLOAD_PATH } from "./constants";
+import { getLogger } from "./logger";
+import { convertTorrentInfo } from "./torrents";
 
 const SESSION_ID_HEADER_NAME = "X-Transmission-Session-Id";
 const FIELDS = [
@@ -39,14 +36,14 @@ type Method =
 type TorrentResponse<T extends Method> = T extends "session-get"
   ? string
   : T extends "torrent-get"
-  ? { arguments: { torrents: TorrentInfo[] } }
-  : T extends "free-space"
-  ? { arguments: { "size-bytes": number } }
-  : T extends "torrent-add"
-  ? { arguments: { "torrent-added"?: TorrentInfo } }
-  : T extends "torrent-remove"
-  ? { arguments: {} }
-  : { arguments: Record<string, any> };
+    ? { arguments: { torrents: TorrentInfo[] } }
+    : T extends "free-space"
+      ? { arguments: { "size-bytes": number } }
+      : T extends "torrent-add"
+        ? { arguments: { "torrent-added"?: TorrentInfo } }
+        : T extends "torrent-remove"
+          ? { arguments: {} }
+          : { arguments: Record<string, any> };
 
 type ExemptMethod = "session-get" | "session-stats";
 
@@ -130,9 +127,7 @@ export class TorrentClient {
         }
         return await this.fetch(method, ...passed);
       }
-      logger.error(
-        `Client response to ${method}: ${res.status} ${res.statusText}`,
-      );
+      logger.error(`Client response to ${method}: ${res.status} ${res.statusText}`);
     }
     return res.data as TorrentResponse<T>;
   }
@@ -152,17 +147,14 @@ export class TorrentClient {
       try {
         mapped.push(convertTorrentInfo(current));
       } catch (error) {
-        if (
-          !(error instanceof Error) ||
-          !error.message.includes("doesn't match regex")
-        )
+        if (!(error instanceof Error) || !error.message.includes("doesn't match regex"))
           throw error;
       }
       return mapped;
     }, [] as ConvertedTorrentInfo[]);
   }
 
-  async getTorrentInfo(episode: BasicEpisode) {
+  async getTorrentInfo(episode: Episode) {
     const torrents = await this.getTorrents();
     const showNameLower = episode.showName.toLowerCase();
     return torrents.find((torrent) => {
@@ -215,9 +207,7 @@ export class TorrentClient {
     });
     const torrent = resTorrentAdd.arguments["torrent-added"];
     if (!torrent) {
-      logger.info(
-        "Duplicate file; no torrents added. Creating database entry.",
-      );
+      logger.info("Duplicate file; no torrents added. Creating database entry.");
       if (createEntry) await createEntry();
       return null;
     }
