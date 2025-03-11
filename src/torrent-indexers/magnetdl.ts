@@ -1,4 +1,4 @@
-import { TableStyledTorrentIndexer } from "./torrentIndexer";
+import { TableStyledTorrentIndexer } from ".";
 
 const SEEDERS_SUFFIX = "/se/desc/";
 // const LEECHERS_SUFFIX = "/le/desc/";

@@ -1,9 +1,5 @@
 import { Node } from "node-html-parser";
-import {
-  getAnchorHref,
-  SearchResult,
-  TableStyledTorrentIndexer,
-} from "./torrentIndexer";
+import { getAnchorHref, SearchResult, TableStyledTorrentIndexer } from ".";
 
 export class Extranet extends TableStyledTorrentIndexer {
   SERVICE_URL_BASE =

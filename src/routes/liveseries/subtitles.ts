@@ -1,34 +1,23 @@
-import express, { Request, Response } from "express";
-
 import fs from "fs/promises";
-import type { BasicEpisode } from "guzek-uk-common/models";
-import { STATIC_CACHE_DURATION_MINS } from "guzek-uk-common/enums";
+import type { Context } from "elysia";
+import { Elysia } from "elysia";
+
+import type { Episode } from "../../lib/types";
+import { STATIC_CACHE_DURATION_MINS, TORRENT_DOWNLOAD_PATH } from "../../lib/constants";
+import { setCacheControl } from "../../lib/http";
+import { handleTorrentRequest, searchForDownloadedEpisode } from "../../lib/liveseries";
 import {
   downloadSubtitles,
   getSubtitleClient,
   SUBTITLES_DEFAULT_LANGUAGE,
-} from "../../subtitles";
-import { logResponse, sendError } from "guzek-uk-common/lib/http";
-import { setCacheControl, getStatusText } from "guzek-uk-common/lib/util";
-import {
-  handleTorrentRequest,
-  searchForDownloadedEpisode,
-} from "../../liveseries";
-import { TORRENT_DOWNLOAD_PATH } from "../../config";
-
-export const router = express.Router();
+} from "../../lib/subtitles";
 
 const SUBTITLES_PATH = "/var/cache/guzek-uk/subtitles";
 const SUBTITLES_FILENAME = "subtitles.vtt";
 /** If set to `true`, doesn't use locally downloaded subtitles file. */
 const SUBTITLES_FORCE_DOWNLOAD_NEW = false;
 
-async function getSubtitles(
-  req: Request,
-  res: Response,
-  episode: BasicEpisode,
-  filename: string,
-) {
+async function getSubtitles(ctx: Context, episode: Episode, filename: string) {
   const directory = `${SUBTITLES_PATH}/${episode.showName}/${episode.season}/${episode.episode}`;
   const filepath = `${directory}/${SUBTITLES_FILENAME}`;
   try {
@@ -37,9 +26,7 @@ async function getSubtitles(
       throw new Error("Force fresh download of subtitles");
     }
   } catch (error) {
-    const language = `${
-      req.query.lang || SUBTITLES_DEFAULT_LANGUAGE
-    }`.toLowerCase();
+    const language = `${ctx.query.lang || SUBTITLES_DEFAULT_LANGUAGE}`.toLowerCase();
     const errorMessage = await downloadSubtitles(
       directory,
       filepath,
@@ -48,29 +35,23 @@ async function getSubtitles(
       language,
     );
     if (errorMessage) {
-      sendError(res, 400, { message: errorMessage });
-      return;
+      ctx.set.status = 400;
+      return { message: errorMessage };
     }
   }
-  setCacheControl(res, STATIC_CACHE_DURATION_MINS);
+  setCacheControl(ctx, STATIC_CACHE_DURATION_MINS);
   res.status(200).sendFile(filepath);
-  logResponse(res, `${getStatusText(200)} (${SUBTITLES_FILENAME})`);
+  // logResponse(ctx, `${getStatusText(200)} (${SUBTITLES_FILENAME})`);
 }
 
-router.get("/:showName/:season/:episode", (req, res) =>
+export const subtitlesRouter = new Elysia().get("/:showName/:season/:episode", (ctx) =>
   handleTorrentRequest(
-    req,
-    res,
-    (torrent, episode) => getSubtitles(req, res, episode, torrent.name),
+    ctx,
+    (torrent, episode) => getSubtitles(ctx, episode, torrent.name),
     async (episode) => {
-      const filename = await searchForDownloadedEpisode(res, episode);
+      const filename = await searchForDownloadedEpisode(ctx, episode);
       if (!filename) return;
-      getSubtitles(
-        req,
-        res,
-        episode,
-        filename.replace(TORRENT_DOWNLOAD_PATH, ""),
-      );
+      getSubtitles(ctx, episode, filename.replace(TORRENT_DOWNLOAD_PATH, ""));
     },
   ),
 );
