@@ -1,31 +1,34 @@
-import express from "express";
-import { sendFileStream } from "guzek-uk-common/lib/http";
-import {
-  handleTorrentRequest,
-  searchForDownloadedEpisode,
-} from "../../liveseries";
-import { TORRENT_DOWNLOAD_PATH } from "../../config";
-import { getLogger } from "guzek-uk-common/lib/logger";
+import type { Context } from "elysia";
+import Elysia from "elysia";
 
-export const router = express.Router();
+import { TORRENT_DOWNLOAD_PATH } from "../../lib/constants";
+import { handleTorrentRequest, searchForDownloadedEpisode } from "../../lib/liveseries";
+import { getLogger } from "../../lib/logger";
 
 const logger = getLogger(__filename);
 
-router.get("/:showName/:season/:episode", (req, res) =>
+function sendFileStream(ctx: Context, path: string, extension?: string) {
+  // TODO: Implement this function
+}
+
+export const videoRouter = new Elysia().get("/:showName/:season/:episode", (ctx) =>
   handleTorrentRequest(
-    req,
-    res,
-    (torrent) =>
-      sendFileStream(req, res, TORRENT_DOWNLOAD_PATH + torrent.name, "mp4"),
+    ctx,
+    (torrent) => sendFileStream(ctx, TORRENT_DOWNLOAD_PATH + torrent.name, "mp4"),
     async (episode) => {
       const filename = await searchForDownloadedEpisode(
-        res,
+        ctx,
         episode,
-        !!req.query.allow_non_mp4,
+        !!ctx.query.allow_non_mp4,
       );
       logger.info(`Backup video search result: '${filename}'`);
       if (!filename) return;
-      sendFileStream(req, res, filename);
+      if (typeof filename === "object") {
+        // TODO:
+        // return filename;
+        return;
+      }
+      sendFileStream(ctx, filename);
     },
   ),
 );

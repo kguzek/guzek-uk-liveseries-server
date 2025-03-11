@@ -1,4 +1,4 @@
-import { SearchResult, TableStyledTorrentIndexer } from "./torrentIndexer";
+import { SearchResult, TableStyledTorrentIndexer } from ".";
 
 export class Eztv extends TableStyledTorrentIndexer {
   TABLE_CSS_SELECTOR = "#header_holder > table:last-of-type";

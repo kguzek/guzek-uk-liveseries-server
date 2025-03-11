@@ -1,77 +1,106 @@
-import express from "express";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import { BasicEpisode } from "guzek-uk-common/models";
-import { Eztv } from "../torrentIndexers/eztv";
-import {
-  SearchResult,
-  TorrentIndexer,
-} from "../torrentIndexers/torrentIndexer";
-import { sendError, sendOK } from "guzek-uk-common/lib/http";
-import { validateNaturalNumber } from "guzek-uk-common/lib/util";
+import { getLogger } from "../lib/logger";
+import { searchResultSchema } from "../lib/schemas";
+import { TorrentIndexer } from "../torrent-indexers";
+import { Eztv } from "../torrent-indexers/eztv";
+import Elysia, { t } from "elysia";
 
-export const router = express.Router();
-const indexer: TorrentIndexer = new Eztv();
+import type { Episode, SearchResult } from "../lib/types";
 
 const logger = getLogger(__filename);
+const indexer: TorrentIndexer = new Eztv();
 
-function isResultKey(result: SearchResult, k: any): k is keyof SearchResult {
-  const key = k as keyof SearchResult;
-  const value = result[key];
-  return (
-    typeof key === "string" &&
-    key in result &&
-    value != null &&
-    ["string", "number"].includes(typeof value)
-  );
-}
+const NO_TORRENTS_FOUND_MESSAGE = "No torrents found for this episode." as const;
+const TORRENTS_ERROR_MESSAGE = "Could not obtain torrent data." as const;
 
-// Searches for torrents at /torrents/[tv-show]/[season]/[episode]
-router.get("/:showName/:season/:episode", async (req, res) => {
-  const showName = req.params.showName;
-  const season = +req.params.season;
-  const episode = +req.params.episode;
-  const selectTopResult = req.query.select === "top_result";
-  const basicEpisode: BasicEpisode = { showName, season, episode };
-  const errorMessage =
-    validateNaturalNumber(season) ?? validateNaturalNumber(episode);
-  if (errorMessage) return sendError(res, 400, { message: errorMessage });
+export const torrentsRouter = new Elysia().get(
+  "/torrents/:showName/:season/:episode",
+  async (ctx) => {
+    const { params, query, set } = ctx;
+    const showName = params.showName;
+    const season = +params.season;
+    const episode = +params.episode;
+    const selectTopResult = query.select === "top_result";
+    const episodeObject: Episode = { showName, season, episode };
 
-  let results: SearchResult[] = [];
-  try {
-    results = await indexer.search(basicEpisode);
-  } catch (error) {
-    logger.error("Error searching for episode:", error);
-    sendError(res, 500, { message: "Could not obtain torrent data." });
-  }
-  if (selectTopResult) {
+    let results: SearchResult[] = [];
+    try {
+      results = await indexer.search(episodeObject);
+    } catch (error) {
+      logger.error("Error searching for episode:", error);
+      set.status = 500;
+      return {
+        message: TORRENTS_ERROR_MESSAGE,
+      };
+    }
     if (results.length === 0) {
-      return sendError(res, 404, {
-        message: "No torrents found for this episode.",
+      set.status = 404;
+      return {
+        message: NO_TORRENTS_FOUND_MESSAGE,
+      };
+    }
+    if (selectTopResult) {
+      // `null` is only returned if the array is empty, which has been checked already
+      return indexer.selectTopResult(results)!;
+    }
+    const sortAscending =
+      typeof query.sort_direction === "string" &&
+      ["asc", "ascending"].includes(query.sort_direction);
+    if (query.sort_by) {
+      const key = query.sort_by;
+      results = results.sort((a, b) => {
+        let valueA = a[key] || 0;
+        let valueB = b[key] || 0;
+        const comparison =
+          typeof valueA === "string"
+            ? valueA.localeCompare(`${valueB}`)
+            : typeof valueB === "string"
+              ? `${valueA}`.localeCompare(valueB)
+              : valueA - valueB;
+        return sortAscending ? comparison : -comparison;
       });
     }
-    const topResult = indexer.selectTopResult(results);
-    return sendOK(res, topResult);
-  }
-  const sortBy = req.query.sort_by;
-  if (results.every((result) => isResultKey(result, sortBy))) {
-    const key = sortBy as keyof SearchResult;
-    const sortAscending =
-      typeof req.query.sort_direction === "string" &&
-      ["asc", "ascending"].includes(req.query.sort_direction);
-    results = results.sort((a, b) => {
-      const k = key as keyof SearchResult;
-      let valueA = a[k] as string | number;
-      let valueB = b[k] as string | number;
-      const comparison =
-        typeof valueA === "string"
-          ? valueA.localeCompare(`${valueB}`)
-          : typeof valueB === "string"
-          ? `${valueA}`.localeCompare(valueB)
-          : valueA - valueB;
-      return sortAscending ? comparison : -comparison;
-    });
-  }
-  sendOK(res, results);
-});
-
-export default router;
+    return results;
+  },
+  {
+    params: t.Object({
+      showName: t.String({ examples: ["Chicago Fire"] }),
+      season: t.Numeric({
+        minimum: 1,
+        multipleOf: 1,
+      }),
+      episode: t.Numeric({
+        minimum: 1,
+        multipleOf: 1,
+      }),
+    }),
+    query: t.Object({
+      select: t.ReadonlyOptional(t.Literal("top_result")),
+      sort_by: t.ReadonlyOptional(
+        t.Union([
+          t.Literal("link"),
+          t.Literal("name"),
+          t.Literal("age"),
+          t.Literal("type"),
+          t.Literal("files"),
+          t.Literal("size"),
+          t.Literal("sizeHuman"),
+          t.Literal("seeders"),
+          t.Literal("leechers"),
+        ]),
+      ),
+      sort_direction: t.ReadonlyOptional(
+        t.Union([
+          t.Literal("asc"),
+          t.Literal("ascending"),
+          t.Literal("desc"),
+          t.Literal("descending"),
+        ]),
+      ),
+    }),
+    response: {
+      200: t.Union([searchResultSchema, t.Array(searchResultSchema)]),
+      404: t.Object({ message: t.Literal(NO_TORRENTS_FOUND_MESSAGE) }),
+      500: t.Object({ message: t.Literal(TORRENTS_ERROR_MESSAGE) }),
+    },
+  },
+);

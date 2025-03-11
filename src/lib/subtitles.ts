@@ -1,9 +1,10 @@
+import { createWriteStream } from "fs";
 import fs from "fs/promises";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
-import { createWriteStream } from "fs";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import type { BasicEpisode } from "guzek-uk-common/models";
-import { serialiseEpisode } from "guzek-uk-common/lib/util";
+
+import type { Episode } from "./types";
+import { serialiseEpisode } from "./liveseries";
+import { getLogger } from "./logger";
 
 const SUBTITLES_API_URL = "https://api.opensubtitles.com/api/v1";
 export const SUBTITLES_DEFAULT_LANGUAGE = "en";
@@ -78,11 +79,10 @@ export async function downloadSubtitles(
   directory: string,
   filepath: string,
   filename: string,
-  episode: BasicEpisode,
+  episode: Episode,
   language: string,
 ): Promise<string> {
-  if (!subtitleClient)
-    return "Subtitles are currently unavailable. Try again later.";
+  if (!subtitleClient) return "Subtitles are currently unavailable. Try again later.";
 
   let res: AxiosResponse;
   // Get the substring up until the first slash or opening square bracket, exclusive
@@ -104,10 +104,7 @@ export async function downloadSubtitles(
     });
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      logger.debug(
-        `Non-OK subtitles response: ${error.message}`,
-        error.response?.data,
-      );
+      logger.debug(`Non-OK subtitles response: ${error.message}`, error.response?.data);
     } else {
       logger.error("Network error getting subtitles:", error);
     }
@@ -142,9 +139,7 @@ export async function downloadSubtitles(
   const result =
     matches.find((result) => result.attributes.language === language) ??
     // None of the matches have the right language, so send the default language (English)
-    matches.find(
-      (result) => result.attributes.language === SUBTITLES_DEFAULT_LANGUAGE,
-    ) ??
+    matches.find((result) => result.attributes.language === SUBTITLES_DEFAULT_LANGUAGE) ??
     // Maybe some foreign shows don't even have subtitles in English, so send the most downloaded file there is
     matches[0];
   const fileId = result.attributes.files[0]?.file_id;

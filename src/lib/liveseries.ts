@@ -1,18 +1,13 @@
-import { Request, Response } from "express";
-import fs from "fs/promises";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import { BasicEpisode, TorrentInfo } from "guzek-uk-common/models";
-import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
-import {
-  getVideoExtension,
-  serialiseEpisode,
-  validateNaturalNumber,
-} from "guzek-uk-common/lib/util";
-import { sendError } from "guzek-uk-common/lib/http";
-import { TORRENT_DOWNLOAD_PATH } from "./config";
-import { TorrentClient } from "./torrentClient";
 import { ObjectEncodingOptions } from "fs";
+import fs from "fs/promises";
 import { basename } from "path";
+import type { Context } from "elysia";
+
+import type { Episode, TorrentInfo } from "./types";
+import { TORRENT_DOWNLOAD_PATH } from "./constants";
+import { getVideoExtension } from "./http";
+import { getLogger } from "./logger";
+import { TorrentClient } from "./torrent-client";
 
 const logger = getLogger(__filename);
 
@@ -22,9 +17,18 @@ const RECURSIVE_READ_OPTIONS = {
   recursive: true,
 } as ObjectEncodingOptions;
 
+export const serialiseEpisode = (episode: Pick<Episode, "season" | "episode">) =>
+  "S" +
+  `${episode.season}`.padStart(2, "0") +
+  "E" +
+  `${episode.episode}`.padStart(2, "0");
+
+/** Converts periods and plus symbols into spaces, and removes `:/` sequences. */
+export const sanitiseShowName = (showName: string) =>
+  showName.replace(/[.+]/g, " ").replace(/:\//g, "").trim();
+
 /** Converts periods and plus symbols into spaces, removes `:/` sequences, and turns to lowercase. */
-const parseFilename = (filename: string) =>
-  sanitiseShowName(filename).toLowerCase();
+const parseFilename = (filename: string) => sanitiseShowName(filename).toLowerCase();
 
 export let torrentClient: TorrentClient;
 
@@ -41,22 +45,21 @@ export class EpisodeNotFoundError extends Error {}
  * @param allowAllVideoFiletypes Whether to allow all video filetypes, or only `.mp4`
  */
 export async function searchForDownloadedEpisode(
-  res: Response,
-  episode: BasicEpisode,
+  ctx: Context,
+  episode: Episode,
   allowAllVideoFiletypes = false,
 ) {
-  const search = parseFilename(
-    `${episode.showName} ${serialiseEpisode(episode)}`,
-  );
+  const search = parseFilename(`${episode.showName} ${serialiseEpisode(episode)}`);
   logger.debug(`Searching for downloaded episode: '${search}'...`);
   let files: string[];
   try {
     files = await fs.readdir(TORRENT_DOWNLOAD_PATH, RECURSIVE_READ_OPTIONS);
   } catch (error) {
     logger.error("Error loading downloaded episodes:", error);
-    return sendError(res, 500, {
+    ctx.set.status = 500;
+    return {
       message: "Could not load the downloaded episodes.",
-    });
+    };
   }
   const match = files.find(
     (file) =>
@@ -73,34 +76,26 @@ export async function searchForDownloadedEpisode(
  * information related to the torrent, or sends an error response if the torrent is not found.
  */
 export async function handleTorrentRequest(
-  req: Request,
-  res: Response,
-  callback: (
-    torrent: TorrentInfo,
-    episode: BasicEpisode,
-  ) => void | Promise<void>,
-  torrentNotFoundCallback: (episode: BasicEpisode) => void | Promise<void>,
+  ctx: Context,
+  callback: (torrent: TorrentInfo, episode: Episode) => void | Promise<void>,
+  torrentNotFoundCallback: (episode: Episode) => void | Promise<void>,
 ) {
-  const showName = req.params.showName;
-  const season = +req.params.season;
-  const episode = +req.params.episode;
-  const basicEpisode: BasicEpisode = { showName, season, episode };
-  const errorMessage =
-    validateNaturalNumber(season) ?? validateNaturalNumber(episode);
-  if (errorMessage) return sendError(res, 400, { message: errorMessage });
+  const showName = ctx.params.showName;
+  const season = +ctx.params.season;
+  const episode = +ctx.params.episode;
+  const basicEpisode: Episode = { showName, season, episode };
   let torrent: TorrentInfo | undefined;
   try {
     torrent = await torrentClient.getTorrentInfo(basicEpisode);
   } catch (error) {
     logger.error("Could not get torrent info:", error);
-    return sendError(res, 503, {
+    ctx.set.status = 503;
+    return {
       message: "Could not obtain the current torrent list. Try again later.",
-    });
+    };
   }
   basicEpisode.showName = sanitiseShowName(basicEpisode.showName);
-  const serialized = `'${basicEpisode.showName} ${serialiseEpisode(
-    basicEpisode,
-  )}'`;
+  const serialized = `'${basicEpisode.showName} ${serialiseEpisode(basicEpisode)}'`;
   if (torrent) {
     try {
       await callback(torrent, basicEpisode);
@@ -119,9 +114,10 @@ export async function handleTorrentRequest(
       logger.error("Error while searching for torrent:", error);
     // Continue to the 404 response
   }
-  return sendError(res, 404, {
+  ctx.set.status = 404;
+  return {
     message: `Episode ${serialized} was not found in the downloads.`,
-  });
+  };
 }
 
 export async function initialiseTorrentClient() {
