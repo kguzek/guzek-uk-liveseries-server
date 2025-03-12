@@ -1,9 +1,11 @@
-import { Node } from "node-html-parser";
-import { getAnchorHref, SearchResult, TableStyledTorrentIndexer } from ".";
+import type { Node } from "node-html-parser";
+
+import type { SearchResult } from "@/lib/types";
+
+import { getAnchorHref, TableStyledTorrentIndexer } from ".";
 
 export class Extranet extends TableStyledTorrentIndexer {
-  SERVICE_URL_BASE =
-    "https://extranet.torrentbay.st/search/?order=seed&sort=desc&q=";
+  SERVICE_URL_BASE = "https://extranet.torrentbay.st/search/?order=seed&sort=desc&q=";
   TABLE_CSS_SELECTOR = "table.search-table";
   TABLE_HEADER_TRANSLATIONS = {
     "TORRENT NAME": "name",
@@ -18,8 +20,7 @@ export class Extranet extends TableStyledTorrentIndexer {
     const firstColumn = columns[0];
     const name = firstColumn?.childNodes[0]?.childNodes[1]?.textContent;
     if (name) result.name = name;
-    const type =
-      firstColumn?.childNodes[0]?.childNodes[2]?.childNodes[1].textContent;
+    const type = firstColumn?.childNodes[0]?.childNodes[2]?.childNodes[1].textContent;
     if (type) result.type = type;
     const anchorParentElement = firstColumn?.childNodes[1];
     const link = getAnchorHref(anchorParentElement);

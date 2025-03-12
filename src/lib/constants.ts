@@ -30,6 +30,7 @@ export const CLIENT_ERROR_STATUS_CODES = {
   405: "Method Not Allowed",
   406: "Not Acceptable",
   409: "Conflict",
+  422: "Unprocessable Content",
   429: "Too Many Requests",
 } as const;
 
