@@ -1,10 +1,10 @@
-import { getLogger } from "../lib/logger";
-import { searchResultSchema } from "../lib/schemas";
-import { TorrentIndexer } from "../torrent-indexers";
-import { Eztv } from "../torrent-indexers/eztv";
 import Elysia, { t } from "elysia";
 
-import type { Episode, SearchResult } from "../lib/types";
+import type { Episode, SearchResult } from "@/lib/types";
+import { getLogger } from "@/lib/logger";
+import { episodeSchema, searchResultSchema } from "@/lib/schemas";
+import { TorrentIndexer } from "@/torrent-indexers";
+import { Eztv } from "@/torrent-indexers/eztv";
 
 const logger = getLogger(__filename);
 const indexer: TorrentIndexer = new Eztv();
@@ -62,17 +62,7 @@ export const torrentsRouter = new Elysia().get(
     return results;
   },
   {
-    params: t.Object({
-      showName: t.String({ examples: ["Chicago Fire"] }),
-      season: t.Numeric({
-        minimum: 1,
-        multipleOf: 1,
-      }),
-      episode: t.Numeric({
-        minimum: 1,
-        multipleOf: 1,
-      }),
-    }),
+    params: episodeSchema,
     query: t.Object({
       select: t.ReadonlyOptional(t.Literal("top_result")),
       sort_by: t.ReadonlyOptional(

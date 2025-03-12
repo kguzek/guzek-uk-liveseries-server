@@ -1,6 +1,6 @@
 {
   "name": "guzek-uk-liveseries-server",
-  "version": "3.4.2",
+  "version": "4.0.0",
   "description": "A self-hostable server for downloading & storing your favourite TV shows.",
   "author": "Konrad Guzek",
   "homepage": "https://github.com/kguzek/guzek-uk-liveseries-server#readme",
@@ -9,8 +9,8 @@
     "bun": "^1.2.5"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "NODE_ENV=development bun run --watch src/index.ts"
+    "dev": "NODE_ENV=development bun run --watch src/index.ts",
+    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts"
   },
   "repository": {
     "type": "git",

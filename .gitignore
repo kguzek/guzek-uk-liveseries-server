@@ -4,6 +4,8 @@ node_modules
 # production
 dist
 whitelist.json
+/server
+/server.exe
 
 # misc
 .DS_Store
