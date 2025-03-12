@@ -5,8 +5,8 @@ import type { Context, Static } from "elysia";
 
 import type { episodeSchema } from "./schemas";
 import type { Episode } from "./types";
-import { STATIC_CACHE_DURATION_MINS, TORRENT_DOWNLOAD_PATH } from "./constants";
-import { getVideoExtension, setCacheControl } from "./http";
+import { TORRENT_DOWNLOAD_PATH } from "./constants";
+import { getVideoExtension } from "./http";
 import { getLogger } from "./logger";
 import { TorrentClient } from "./torrent-client";
 

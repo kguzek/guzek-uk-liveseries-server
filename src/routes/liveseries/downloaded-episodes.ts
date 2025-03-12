@@ -1,5 +1,5 @@
 import type { Context } from "elysia";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 
 import type {
   BasicTvShow,
@@ -17,38 +17,12 @@ import {
   torrentClient,
 } from "@/lib/liveseries";
 import { getLogger } from "@/lib/logger";
-import { episodeSchema } from "@/lib/schemas";
+import { episodeSchema, episodeSchemaWithId } from "@/lib/schemas";
 import { TorrentIndexer } from "@/torrent-indexers";
 import { Eztv } from "@/torrent-indexers/eztv";
 
 const logger = getLogger(__filename);
-
-const WS_MESSAGE_INTERVAL_MS = 3000;
-
 const torrentIndexer: TorrentIndexer = new Eztv();
-
-const currentTimeouts: Record<number, () => Promise<void>> = {};
-let lastMessageTimestamp = 0;
-
-export function sendWebsocketMessage() {
-  logger.verbose("Speeding up websocket message");
-  lastMessageTimestamp = 0;
-  for (const [timeout, callback] of Object.entries(currentTimeouts)) {
-    clearTimeout(+timeout);
-    callback();
-  }
-}
-
-class EpisodeAlreadyDownloadedError extends Error {}
-
-async function tryDownloadEpisode(data: BasicTvShow & Episode) {
-  const { showName, ...where } = data;
-  const result = await DownloadedEpisode.findOne({ where });
-  if (result) {
-    throw new EpisodeAlreadyDownloadedError();
-  }
-  return downloadEpisode(data);
-}
 
 async function downloadEpisode(
   data: BasicTvShow & Episode,
@@ -70,14 +44,12 @@ async function downloadEpisode(
     logger.error("The torrent client is unavailable");
     return null;
   }
-  // TODO: why is this commented out?
-  // if (!torrentInfo) {
-  //   logger.error(`Adding the torrent to the client failed.`);
-  //   return null;
-  // }
+  if (!torrentInfo) {
+    logger.error(`Adding the torrent to the client failed.`);
+    return null;
+  }
   await createEntry();
   logger.info("Successfully added new torrent.");
-  sendWebsocketMessage();
   return torrentInfo;
 }
 
@@ -143,8 +115,9 @@ async function deleteEpisode(
   return { message: "Episode deleted successfully." };
 }
 
-// START downloading episode
-new Elysia()
+export const downloadedEpisodesRouter = new Elysia({
+  prefix: "/liveseries/downloaded-episodes",
+})
   .post(
     "/",
     async (ctx) => {
@@ -154,21 +127,20 @@ new Elysia()
       const episode = +ctx.body?.episode;
 
       const serialised = `'${showName}' ${serialiseEpisode({ episode, season })}`;
-      let downloadedEpisode: ConvertedTorrentInfo | null;
-      try {
-        downloadedEpisode = await tryDownloadEpisode({
-          showName,
-          showId,
-          episode,
-          season,
-        });
-      } catch (error) {
-        if (!(error instanceof EpisodeAlreadyDownloadedError)) throw error;
+
+      const where = {
+        showId,
+        episode,
+        season,
+      };
+      const result = await DownloadedEpisode.findOne({ where });
+      if (result) {
         ctx.set.status = 409;
         return {
           message: `Episode ${serialised} is already downloaded.`,
         };
       }
+      const downloadedEpisode = await downloadEpisode({ showName, ...where });
       if (downloadedEpisode) {
         return downloadedEpisode;
       }
@@ -178,11 +150,9 @@ new Elysia()
       };
     },
     {
-      body: t.Intersect([episodeSchema, t.Object({ showId: t.Integer({ minimum: 1 }) })]),
+      body: episodeSchemaWithId,
     },
   )
-
-  // DELETE downloaded episode from server
   .delete(
     "/:showName/:season/:episode",
     (ctx) => {
@@ -193,88 +163,45 @@ new Elysia()
       params: episodeSchema,
     },
   )
-
-  // GET all downloaded episodes
-  .ws("/ws", (ctx) => {
-    if (!torrentClient) {
-      logger.error("Websocket connection established without active torrent client.");
-      return;
-    }
-
-    const username = req.user?.username ?? "<anonymous>";
-    lastMessageTimestamp = 0;
-
-    ws.on("message", (msg) => {
-      let evt: { type: string; data: any };
-
-      try {
-        evt = JSON.parse(msg.toString());
-      } catch (error) {
-        logger.error(`Could not parse websocket message '${msg}':`, error);
+  .ws("/ws", {
+    open(ws) {
+      if (!torrentClient) {
+        const error = "Websocket connection established without active torrent client.";
+        logger.error(error);
+        ws.send({ error });
+        ws.close();
         return;
       }
+    },
 
-      /** The callback to call after a message event which should resolve to the data to be sent back. */
-      let action: (data: any) => Promise<ConvertedTorrentInfo[]>;
+    close(ws) {
+      logger.http(
+        `Websocket connection with ${getRequestIp(ws.data)} (${ws.id}) closed.`,
+      );
+    },
 
-      let delayMultiplier = 1;
+    error(ctx) {
+      logger.error(`Websocket error with ${getRequestIp(ctx)}`);
+    },
 
-      switch (evt.type) {
+    message(ws, message: { type: string; data: ConvertedTorrentInfo[] }) {
+      switch (message.type) {
         case "poll":
-          action = () => torrentClient.getAllTorrentInfos();
-          const torrents = evt.data as ConvertedTorrentInfo[];
-          // Enable longer response times if all downloads are complete
-          if (torrents && Array.isArray(torrents)) {
-            if (!torrents.find((torrent) => torrent.status !== DownloadStatus.COMPLETE))
-              delayMultiplier = 20;
-          } else {
-            logger.warn(`Received invalid data argument for poll message:`, torrents);
-            delayMultiplier = 5;
-          }
+          torrentClient
+            .getAllTorrentInfos()
+            .then((data) => {
+              ws.send({ data });
+            })
+            .catch((error) => {
+              logger.error("Error while performing websocket action:", error);
+              ws.send({ data: [] });
+            });
           break;
         default:
-          logger.warn(
-            `Unknown message type '${evt.type}' received in websocket connection.`,
-          );
+          const error = `Unknown message type '${message.type}'.`;
+          logger.warn(error);
+          ws.send({ error });
           return;
       }
-
-      const currentTimestamp = new Date().getTime();
-      const ping = Math.max(0, currentTimestamp - lastMessageTimestamp);
-      const delayMs = Math.max(0, WS_MESSAGE_INTERVAL_MS * delayMultiplier - ping);
-      lastMessageTimestamp = currentTimestamp + delayMs;
-      logger.verbose(`Sending message in ${delayMs / 1000} s`);
-      const currentTimeout = +global.setTimeout(nextMessageCallback, delayMs);
-      currentTimeouts[currentTimeout] = nextMessageCallback;
-
-      async function nextMessageCallback() {
-        delete currentTimeouts[currentTimeout];
-
-        let data: ConvertedTorrentInfo[] = [];
-        try {
-          data = await action(evt.data);
-        } catch (error) {
-          logger.error("Error while performing websocket action:", error);
-        }
-        const message = JSON.stringify({ data });
-        ws.send(message);
-      }
-    });
-
-    ws.on("close", (event) => {
-      logger.http(
-        `Websocket connection with ${getRequestIp(ctx)} (${username}) closed.`,
-        event,
-      );
-    });
-
-    ws.on("error", (error) => {
-      logger.error(`Websocket error with ${getRequestIp(ctx)} (${username}):`, error);
-    });
-  })
-  .all("/ws", (ctx) => {
-    ctx.set.status = 400;
-    return {
-      message: `Websocket upgrade required for path ${ctx.path}.`,
-    };
+    },
   });

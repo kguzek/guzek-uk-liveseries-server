@@ -4,7 +4,7 @@ import type { StatusCode } from "./types";
 import { STATUS_CODES } from "./constants";
 
 /** Extracts the request's originating IP address, taking into account proxies. */
-export function getRequestIp(ctx: Context) {
+export function getRequestIp(ctx: Pick<Context, "headers" | "server" | "request">) {
   const ip = ctx.headers["cf-connecting-ip"] || ctx.headers["x-forwarded-for"];
   if (!ip) return ctx.server?.requestIP(ctx.request)?.address;
   if (Array.isArray(ip)) return ip[0];

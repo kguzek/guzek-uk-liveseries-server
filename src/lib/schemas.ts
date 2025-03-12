@@ -18,6 +18,11 @@ export const searchResultSchema = t.Object({
 
 export const episodeSchema = t.Object({
   showName: t.String({ examples: ["Chicago Fire"] }),
-  season: t.Integer({ minimum: 1 }),
-  episode: t.Integer({ minimum: 1 }),
+  season: t.Integer({ minimum: 1, examples: [1] }),
+  episode: t.Integer({ minimum: 1, examples: [1] }),
+});
+
+export const episodeSchemaWithId = t.Object({
+  ...episodeSchema.properties,
+  showId: t.Integer({ minimum: 1, examples: [1] }),
 });

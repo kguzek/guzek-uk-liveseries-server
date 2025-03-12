@@ -1,32 +1,4 @@
 services:
-  db:
-    image: mariadb
-    container_name: mariadb
-    restart: always
-    environment:
-      - MARIADB_DATABASE=liveseries
-      - MARIADB_USER=${MY_SQL_DB_USER}
-      - MARIADB_PASSWORD=${MY_SQL_DB_PASSWORD}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./scripts/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "mariadb",
-          "-h",
-          "localhost",
-          "-u${MY_SQL_DB_USER}",
-          "-p${MY_SQL_DB_PASSWORD}",
-          "-e",
-          "SELECT 1",
-        ]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
   transmission:
     build:
       context: .
@@ -54,15 +26,18 @@ services:
       - 9091:9091
       - 51413:51413
       - 51413:51413/udp
+    healthcheck:
+      test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
   server:
     build:
       context: .
-      dockerfile: Dockerfile.server
+      dockerfile: Dockerfile.bun
     container_name: liveseries
     restart: always
     environment:
-      - MY_SQL_DB_NAME=liveseries
-      - MY_SQL_DB_HOST=db
       - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
       - TR_DOWNLOAD_PATH=/downloads
@@ -70,12 +45,10 @@ services:
       - ./whitelist.json:/app/whitelist.json
       - ${TR_DOWNLOAD_PATH}:/downloads
     ports:
-      - "${APP_PORT:-80}:5021"
+      - "${APP_PORT:-80}:3000"
     depends_on:
-      db:
-        condition: service_healthy
       transmission:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   mariadb_data:
