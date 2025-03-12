@@ -174,7 +174,7 @@ export class TorrentClient {
     });
   }
 
-  async addTorrent(link: string, createEntry?: () => Promise<any>) {
+  async addTorrent(link: string, createEntry?: () => Promise<unknown>) {
     const resFreeSpace = await this.fetch("free-space", {
       path: TORRENT_DOWNLOAD_PATH,
     });
@@ -208,7 +208,9 @@ export class TorrentClient {
     const torrent = resTorrentAdd.arguments["torrent-added"];
     if (!torrent) {
       logger.info("Duplicate file; no torrents added. Creating database entry.");
-      if (createEntry) await createEntry();
+      if (createEntry) {
+        await createEntry();
+      }
       return null;
     }
     this.numTorrents++;

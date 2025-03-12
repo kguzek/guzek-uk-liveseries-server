@@ -10,7 +10,10 @@ import { subtitlesRouter } from "@/routes/liveseries/subtitles";
 import { videoRouter } from "@/routes/liveseries/video";
 import { torrentsRouter } from "@/routes/torrents";
 
+import { initialiseTorrentClient } from "./lib/liveseries";
 import { initialiseSubtitleClient } from "./lib/subtitles";
+import { downloadedEpisodesRouter } from "./routes/liveseries/downloaded-episodes";
+import { staticRouter } from "./routes/static";
 
 const logger = getLogger(__filename);
 
@@ -33,13 +36,11 @@ const app = new Elysia()
     };
   })
   .use(healthRouter)
+  .use(staticRouter)
   .use(torrentsRouter)
   .use(subtitlesRouter)
   .use(videoRouter)
-  .get("/favicon.ico", (ctx) => {
-    setCacheControl(ctx, 60 * 24);
-    return file("src/public/favicon.ico");
-  })
+  .use(downloadedEpisodesRouter)
   .listen(3000);
 
 logger.http(
@@ -47,3 +48,4 @@ logger.http(
 );
 
 initialiseSubtitleClient();
+initialiseTorrentClient();
