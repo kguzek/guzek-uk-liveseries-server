@@ -1,11 +1,12 @@
 import { ObjectEncodingOptions } from "fs";
-import fs from "fs/promises";
-import { basename } from "path";
-import type { Context } from "elysia";
+import { readdir } from "fs/promises";
+import path, { basename } from "path";
+import type { Context, Static } from "elysia";
 
-import type { Episode, TorrentInfo } from "./types";
-import { TORRENT_DOWNLOAD_PATH } from "./constants";
-import { getVideoExtension } from "./http";
+import type { episodeSchema } from "./schemas";
+import type { Episode } from "./types";
+import { STATIC_CACHE_DURATION_MINS, TORRENT_DOWNLOAD_PATH } from "./constants";
+import { getVideoExtension, setCacheControl } from "./http";
 import { getLogger } from "./logger";
 import { TorrentClient } from "./torrent-client";
 
@@ -32,33 +33,32 @@ const parseFilename = (filename: string) => sanitiseShowName(filename).toLowerCa
 
 export let torrentClient: TorrentClient;
 
-/** Returns a 404 response to the client when thrown within a `handleTorrentRequest` callback. */
-export class EpisodeNotFoundError extends Error {}
-
 /**
  * Searches the downloads folder for a filename which matches the episode.
  * The episode's show name must be sanitised before calling this function.
- * Sends a 500 response if the folder could not be read.
- * Throws an `Error` if the episode is not found, which must be handled.
- * @param res The response object
+ * @param ctx The Elysia context
  * @param episode The episode to search for
  * @param allowAllVideoFiletypes Whether to allow all video filetypes, or only `.mp4`
+ * @returns an error object or the episode file handle, guaranteed to exist on the filesystem
  */
 export async function searchForDownloadedEpisode(
-  ctx: Context,
+  ctx: Pick<Context, "set">,
   episode: Episode,
   allowAllVideoFiletypes = false,
 ) {
-  const search = parseFilename(`${episode.showName} ${serialiseEpisode(episode)}`);
+  const serialized = `${episode.showName} ${serialiseEpisode(episode)}`;
+  const search = parseFilename(serialized);
   logger.debug(`Searching for downloaded episode: '${search}'...`);
   let files: string[];
   try {
-    files = await fs.readdir(TORRENT_DOWNLOAD_PATH, RECURSIVE_READ_OPTIONS);
+    files = await readdir(path.resolve(TORRENT_DOWNLOAD_PATH), RECURSIVE_READ_OPTIONS);
   } catch (error) {
     logger.error("Error loading downloaded episodes:", error);
     ctx.set.status = 500;
     return {
-      message: "Could not load the downloaded episodes.",
+      error: {
+        message: "Could not load the downloaded episodes.",
+      },
     };
   }
   const match = files.find(
@@ -67,57 +67,28 @@ export async function searchForDownloadedEpisode(
       getVideoExtension(file) != null &&
       (allowAllVideoFiletypes || file.endsWith(".mp4")),
   );
-  if (match) return TORRENT_DOWNLOAD_PATH + match;
-  throw new EpisodeNotFoundError();
-}
-
-/**
- * Parses the requested torrent from the request object and either calls the callback with
- * information related to the torrent, or sends an error response if the torrent is not found.
- */
-export async function handleTorrentRequest(
-  ctx: Context,
-  callback: (torrent: TorrentInfo, episode: Episode) => void | Promise<void>,
-  torrentNotFoundCallback: (episode: Episode) => void | Promise<void>,
-) {
-  const showName = ctx.params.showName;
-  const season = +ctx.params.season;
-  const episode = +ctx.params.episode;
-  const basicEpisode: Episode = { showName, season, episode };
-  let torrent: TorrentInfo | undefined;
-  try {
-    torrent = await torrentClient.getTorrentInfo(basicEpisode);
-  } catch (error) {
-    logger.error("Could not get torrent info:", error);
-    ctx.set.status = 503;
-    return {
-      message: "Could not obtain the current torrent list. Try again later.",
-    };
-  }
-  basicEpisode.showName = sanitiseShowName(basicEpisode.showName);
-  const serialized = `'${basicEpisode.showName} ${serialiseEpisode(basicEpisode)}'`;
-  if (torrent) {
-    try {
-      await callback(torrent, basicEpisode);
-      return;
-    } catch (error) {
-      if (!(error instanceof EpisodeNotFoundError)) throw error;
+  const filename = TORRENT_DOWNLOAD_PATH + match;
+  if (match) {
+    const file = Bun.file(filename);
+    if (await file.exists()) {
+      return { file };
     }
-  } else {
-    logger.debug(`Torrent not found: ${serialized}`);
-  }
-  try {
-    await torrentNotFoundCallback(basicEpisode);
-    return;
-  } catch (error) {
-    if (!(error instanceof EpisodeNotFoundError))
-      logger.error("Error while searching for torrent:", error);
-    // Continue to the 404 response
+    logger.warn("File in directory but not found:", filename);
   }
   ctx.set.status = 404;
   return {
-    message: `Episode ${serialized} was not found in the downloads.`,
+    error: {
+      message: `Episode '${serialized}' was not found in the downloads.`,
+    },
   };
+}
+
+export function parseEpisodeRequest(
+  ctx: Pick<Context<{ params: Static<typeof episodeSchema> }>, "params">,
+) {
+  const episode: Episode = ctx.params;
+  episode.showName = parseFilename(episode.showName);
+  return episode;
 }
 
 export async function initialiseTorrentClient() {

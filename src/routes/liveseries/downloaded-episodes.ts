@@ -1,26 +1,25 @@
-import fs from "fs/promises";
 import type { Context } from "elysia";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 
 import type {
   BasicTvShow,
   ConvertedTorrentInfo,
   Episode,
   TorrentInfo,
-} from "../../lib/types";
-import { TORRENT_DOWNLOAD_PATH } from "../../lib/constants";
-import { getRequestIp } from "../../lib/http";
+} from "@/lib/types";
+import { TORRENT_DOWNLOAD_PATH } from "@/lib/constants";
+import { getRequestIp } from "@/lib/http";
 import {
-  EpisodeNotFoundError,
-  handleTorrentRequest,
+  parseEpisodeRequest,
   sanitiseShowName,
   searchForDownloadedEpisode,
   serialiseEpisode,
   torrentClient,
-} from "../../lib/liveseries";
-import { getLogger } from "../../lib/logger";
-import { TorrentIndexer } from "../../torrent-indexers";
-import { Eztv } from "../../torrent-indexers/eztv";
+} from "@/lib/liveseries";
+import { getLogger } from "@/lib/logger";
+import { episodeSchema } from "@/lib/schemas";
+import { TorrentIndexer } from "@/torrent-indexers";
+import { Eztv } from "@/torrent-indexers/eztv";
 
 const logger = getLogger(__filename);
 
@@ -82,7 +81,11 @@ async function downloadEpisode(
   return torrentInfo;
 }
 
-async function deleteEpisode(ctx: Context, episode: Episode, torrent?: TorrentInfo) {
+async function deleteEpisode(
+  ctx: Pick<Context, "set">,
+  episode: Episode,
+  torrent?: TorrentInfo,
+) {
   logger.info(`Deleting episode '${episode.showName}' ${serialiseEpisode(episode)}`);
   let destroyedRows;
   try {
@@ -97,9 +100,13 @@ async function deleteEpisode(ctx: Context, episode: Episode, torrent?: TorrentIn
     };
   }
   if (!destroyedRows) {
-    throw new EpisodeNotFoundError();
+    ctx.set.status = 404;
+    return {
+      message: "Episode not found in the database.",
+    };
   }
   let filename: string | void;
+  let file;
   if (torrent) {
     try {
       await torrentClient.removeTorrent(torrent);
@@ -112,27 +119,17 @@ async function deleteEpisode(ctx: Context, episode: Episode, torrent?: TorrentIn
     }
     sendWebsocketMessage();
     filename = torrent.name;
+    file = Bun.file(TORRENT_DOWNLOAD_PATH + filename);
   } else {
-    try {
-      const result = await searchForDownloadedEpisode(ctx, episode);
-      if (typeof result !== "string") {
-        ctx.set.status = 500;
-        return result;
-      }
-      filename = result;
-    } catch (error) {
-      if (!(error instanceof EpisodeNotFoundError)) throw error;
-      ctx.set.status = 500;
-      return {
-        message: `Neither the torrent nor the episode files could be found. The database entry was removed.`,
-      };
+    const result = await searchForDownloadedEpisode(ctx, episode);
+    if (result.error != null) {
+      return result.error;
     }
+    file = result.file;
   }
 
-  if (!filename) return;
-
   try {
-    await fs.rm(TORRENT_DOWNLOAD_PATH + filename, { recursive: true });
+    await file.delete();
   } catch (error) {
     logger.error(error);
     ctx.set.status = 500;
@@ -148,44 +145,53 @@ async function deleteEpisode(ctx: Context, episode: Episode, torrent?: TorrentIn
 
 // START downloading episode
 new Elysia()
-  .post("/", async (ctx) => {
-    const showName = ctx.body?.showName;
-    const showId = +ctx.body?.showId;
-    const season = +ctx.body?.season;
-    const episode = +ctx.body?.episode;
+  .post(
+    "/",
+    async (ctx) => {
+      const showName = ctx.body?.showName;
+      const showId = +ctx.body?.showId;
+      const season = +ctx.body?.season;
+      const episode = +ctx.body?.episode;
 
-    const serialised = `'${showName}' ${serialiseEpisode({ episode, season })}`;
-    let downloadedEpisode: ConvertedTorrentInfo | null;
-    try {
-      downloadedEpisode = await tryDownloadEpisode({
-        showName,
-        showId,
-        episode,
-        season,
-      });
-    } catch (error) {
-      if (!(error instanceof EpisodeAlreadyDownloadedError)) throw error;
-      ctx.set.status = 409;
+      const serialised = `'${showName}' ${serialiseEpisode({ episode, season })}`;
+      let downloadedEpisode: ConvertedTorrentInfo | null;
+      try {
+        downloadedEpisode = await tryDownloadEpisode({
+          showName,
+          showId,
+          episode,
+          season,
+        });
+      } catch (error) {
+        if (!(error instanceof EpisodeAlreadyDownloadedError)) throw error;
+        ctx.set.status = 409;
+        return {
+          message: `Episode ${serialised} is already downloaded.`,
+        };
+      }
+      if (downloadedEpisode) {
+        return downloadedEpisode;
+      }
+      ctx.set.status = 400;
       return {
-        message: `Episode ${serialised} is already downloaded.`,
+        message: `Invalid episode ${serialised}`,
       };
-    }
-    if (downloadedEpisode) {
-      return downloadedEpisode;
-    }
-    ctx.set.status = 400;
-    return {
-      message: `Invalid episode ${serialised}`,
-    };
-  })
+    },
+    {
+      body: t.Intersect([episodeSchema, t.Object({ showId: t.Integer({ minimum: 1 }) })]),
+    },
+  )
 
   // DELETE downloaded episode from server
-  .delete("/:showName/:season/:episode", (ctx) =>
-    handleTorrentRequest(
-      ctx,
-      (torrent, episode) => deleteEpisode(ctx, episode, torrent),
-      (episode) => deleteEpisode(ctx, episode),
-    ),
+  .delete(
+    "/:showName/:season/:episode",
+    (ctx) => {
+      const episode = parseEpisodeRequest(ctx);
+      return deleteEpisode(ctx, episode);
+    },
+    {
+      params: episodeSchema,
+    },
   )
 
   // GET all downloaded episodes

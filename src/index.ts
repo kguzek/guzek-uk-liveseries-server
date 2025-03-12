@@ -1,12 +1,16 @@
-import { getStatusText } from "./lib/http";
-import { getLogger } from "./lib/logger";
-import { logRequest, logResponse } from "./middleware/logging";
-import { healthRouter } from "./routes/health";
-import { subtitlesRouter } from "./routes/liveseries/subtitles";
-import { videoRouter } from "./routes/liveseries/video";
-import { torrentsRouter } from "./routes/torrents";
 import { swagger } from "@elysiajs/swagger";
+import { file } from "bun";
 import { Elysia } from "elysia";
+
+import { getStatusText, setCacheControl } from "@/lib/http";
+import { getLogger } from "@/lib/logger";
+import { logRequest, logResponse } from "@/middleware/logging";
+import { healthRouter } from "@/routes/health";
+import { subtitlesRouter } from "@/routes/liveseries/subtitles";
+import { videoRouter } from "@/routes/liveseries/video";
+import { torrentsRouter } from "@/routes/torrents";
+
+import { initialiseSubtitleClient } from "./lib/subtitles";
 
 const logger = getLogger(__filename);
 
@@ -32,13 +36,14 @@ const app = new Elysia()
   .use(torrentsRouter)
   .use(subtitlesRouter)
   .use(videoRouter)
-  .get("/stream", function* () {
-    for (let i = 0; i < 10; i++) {
-      yield `Hello, world! ${i}\n`;
-    }
+  .get("/favicon.ico", (ctx) => {
+    setCacheControl(ctx, 60 * 24);
+    return file("src/public/favicon.ico");
   })
   .listen(3000);
 
 logger.http(
   `🦊 LiveSeries Server is running on ${app.server?.hostname}:${app.server?.port}`,
 );
+
+initialiseSubtitleClient();

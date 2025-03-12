@@ -1,7 +1,7 @@
 import type { Context } from "elysia";
-import { STATUS_CODES } from "./constants";
 
 import type { StatusCode } from "./types";
+import { STATUS_CODES } from "./constants";
 
 /** Extracts the request's originating IP address, taking into account proxies. */
 export function getRequestIp(ctx: Context) {
@@ -26,5 +26,5 @@ export const getVideoExtension = (filename: string) =>
   filename.match(/\.(mkv|mp4|avi)$/)?.[1];
 
 /** Sets the Cache-Control header in the response so that browsers will be able to cache it for a maximum of `maxAgeMinutes` minutes. */
-export const setCacheControl = (ctx: Context, maxAgeMinutes: number) =>
+export const setCacheControl = (ctx: Pick<Context, "headers">, maxAgeMinutes: number) =>
   (ctx.headers["Cache-Control"] = `public, max-age=${maxAgeMinutes * 60}`);

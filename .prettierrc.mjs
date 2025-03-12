@@ -6,7 +6,6 @@ const config = {
   plugins: ["@ianvs/prettier-plugin-sort-imports"],
   importOrder: [
     "<TYPES>",
-    "^.+$",
     "<THIRD_PARTY_MODULES>",
     "",
     "<TYPES>^(@/)",

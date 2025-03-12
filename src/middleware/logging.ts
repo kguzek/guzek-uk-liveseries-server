@@ -1,6 +1,7 @@
-import { getLogger } from "../lib/logger";
-import { getRequestIp, getStatusText } from "../lib/http";
 import type { Context } from "elysia";
+
+import { getRequestIp, getStatusText } from "@/lib/http";
+import { getLogger } from "@/lib/logger";
 
 const logger = getLogger(__filename);
 
@@ -38,9 +39,7 @@ export async function logRequest({
     query.token = "********";
   }
   const searchParams = query
-    ? new URLSearchParams(
-        Object.entries(query).map(([k, v]) => [k, v || ""]),
-      ).toString()
+    ? new URLSearchParams(Object.entries(query).map(([k, v]) => [k, v || ""])).toString()
     : "";
   const queryString = searchParams.length > 0 ? `?${searchParams}` : "";
   logger.request(`${request.method} ${path}${queryString}`, {

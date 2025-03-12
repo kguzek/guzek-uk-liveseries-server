@@ -12,7 +12,17 @@ services:
       - mariadb_data:/var/lib/mysql
       - ./scripts/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
     healthcheck:
-      test: [ "CMD", "mariadb", "-h", "localhost", "-u${MY_SQL_DB_USER}", "-p${MY_SQL_DB_PASSWORD}", "-e", "SELECT 1" ]
+      test:
+        [
+          "CMD",
+          "mariadb",
+          "-h",
+          "localhost",
+          "-u${MY_SQL_DB_USER}",
+          "-p${MY_SQL_DB_PASSWORD}",
+          "-e",
+          "SELECT 1",
+        ]
       interval: 10s
       timeout: 3s
       retries: 3

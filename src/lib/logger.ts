@@ -160,8 +160,7 @@ export function getLogger(filename: string) {
 
   const debugMode = process.env.NODE_ENV === "development";
 
-  const useConsoleTransport =
-    debugMode || process.env.LOG_TO_CONSOLE === "true";
+  const useConsoleTransport = debugMode || process.env.LOG_TO_CONSOLE === "true";
 
   if (useConsoleTransport && !consoleTransportAdded) {
     consoleTransportAdded = true;

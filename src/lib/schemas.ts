@@ -15,3 +15,9 @@ export const searchResultSchema = t.Object({
   type: t.String(),
   leechers: t.Optional(t.Number()),
 });
+
+export const episodeSchema = t.Object({
+  showName: t.String({ examples: ["Chicago Fire"] }),
+  season: t.Integer({ minimum: 1 }),
+  episode: t.Integer({ minimum: 1 }),
+});
