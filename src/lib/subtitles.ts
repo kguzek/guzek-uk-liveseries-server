@@ -116,7 +116,7 @@ export async function downloadSubtitles(
 
   let res: AxiosResponse;
   const query = episode.showName;
-  logger.debug(`Searching for subtitles '${query}'...`);
+  logger.debug(`Searching for subtitles '${query} ${serialiseEpisode(episode)}'...`);
   try {
     res = await subtitleClient.get("/subtitles", {
       params: {
