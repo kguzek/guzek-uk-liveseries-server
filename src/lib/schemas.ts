@@ -1,7 +1,27 @@
 import { t } from "elysia";
 
-export const messageSchema = t.Object({
-  message: t.String(),
+export const messageSchema = (example: string, ...examples: string[]) =>
+  t.Object({
+    message: t.String({ examples: [example, ...examples] }),
+  });
+
+export const episodeSchema = t.Object({
+  showName: t.String({ examples: ["Chicago Fire"] }),
+  season: t.Integer({ minimum: 1, examples: [13] }),
+  episode: t.Integer({ minimum: 1, examples: [15] }),
+});
+
+export const episodeSchemaWithId = t.Object({
+  ...episodeSchema.properties,
+  showId: t.Integer({ minimum: 1, examples: [59] }),
+});
+
+export const convertedTorrentInfoSchema = t.Object({
+  ...episodeSchema.properties,
+  status: t.Number(),
+  progress: t.Optional(t.Number()),
+  speed: t.Optional(t.Number()),
+  eta: t.Optional(t.Number()),
 });
 
 export const searchResultSchema = t.Object({
@@ -14,15 +34,4 @@ export const searchResultSchema = t.Object({
   files: t.Number(),
   type: t.String(),
   leechers: t.Optional(t.Number()),
-});
-
-export const episodeSchema = t.Object({
-  showName: t.String({ examples: ["Chicago Fire"] }),
-  season: t.Integer({ minimum: 1, examples: [1] }),
-  episode: t.Integer({ minimum: 1, examples: [1] }),
-});
-
-export const episodeSchemaWithId = t.Object({
-  ...episodeSchema.properties,
-  showId: t.Integer({ minimum: 1, examples: [1] }),
 });

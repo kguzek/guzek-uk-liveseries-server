@@ -1,8 +1,16 @@
+import type { Static } from "elysia";
+
 import type {
   CLIENT_ERROR_STATUS_CODES,
   SERVER_ERROR_STATUS_CODES,
   SUCCESS_STATUS_CODES,
 } from "./constants";
+import type {
+  convertedTorrentInfoSchema,
+  episodeSchema,
+  episodeSchemaWithId,
+  searchResultSchema,
+} from "./schemas";
 
 export type RequestMethod = "GET" | "PUT" | "POST" | "DELETE" | "PATCH";
 
@@ -23,32 +31,7 @@ export interface TorrentInfo {
   percentDone?: number;
 }
 
-export interface BasicTvShow {
-  showName: string;
-  showId: number;
-}
-
-export interface Episode {
-  showName: string;
-  season: number;
-  episode: number;
-}
-
-export interface ConvertedTorrentInfo extends Episode {
-  status: number;
-  progress?: number;
-  speed?: number;
-  eta?: number;
-}
-
-export interface SearchResult {
-  link?: string;
-  name: string;
-  age: string;
-  type: string;
-  files: number;
-  size: number;
-  sizeHuman: string;
-  seeders: number;
-  leechers: number;
-}
+export type Episode = Static<typeof episodeSchema>;
+export type EpisodeWithShowId = Static<typeof episodeSchemaWithId>;
+export type ConvertedTorrentInfo = Static<typeof convertedTorrentInfoSchema>;
+export type SearchResult = Static<typeof searchResultSchema>;

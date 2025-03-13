@@ -5,7 +5,7 @@ import type { Context, Static } from "elysia";
 
 import type { episodeSchema } from "./schemas";
 import type { Episode } from "./types";
-import { TORRENT_DOWNLOAD_PATH } from "./constants";
+import { EPISODE_EXAMPLE, TORRENT_DOWNLOAD_PATH } from "./constants";
 import { getVideoExtension } from "./http";
 import { getLogger } from "./logger";
 import { TorrentClient } from "./torrent-client";
@@ -33,6 +33,12 @@ const parseFilename = (filename: string) => sanitiseShowName(filename).toLowerCa
 
 export let torrentClient: TorrentClient;
 
+export const ERROR_MESSAGES = {
+  directoryAccessError: "Could not load the downloaded episodes.",
+  episodeNotFound: (episode: string) =>
+    `Episode '${episode}' was not found in the downloads.`,
+};
+
 /**
  * Searches the downloads folder for a filename which matches the episode.
  * The episode's show name must be sanitised before calling this function.
@@ -57,7 +63,7 @@ export async function searchForDownloadedEpisode(
     ctx.set.status = 500;
     return {
       error: {
-        message: "Could not load the downloaded episodes.",
+        message: ERROR_MESSAGES.directoryAccessError,
       },
     };
   }
@@ -78,7 +84,7 @@ export async function searchForDownloadedEpisode(
   ctx.set.status = 404;
   return {
     error: {
-      message: `Episode '${serialized}' was not found in the downloads.`,
+      message: ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE),
     },
   };
 }
@@ -96,7 +102,10 @@ export async function initialiseTorrentClient() {
   try {
     await torrentClient.waitForInitialisation();
   } catch (error) {
-    logger.error("Initialisation failure:", error);
+    logger.error(
+      "Initialisation failure:",
+      error instanceof Error ? error.message : error,
+    );
     logger.warn(
       "Ensure that your transmission client is running and that the configuration of `.env` is correct.",
     );

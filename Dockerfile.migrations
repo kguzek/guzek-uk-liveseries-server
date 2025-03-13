@@ -1,0 +1,8 @@
+FROM node:20-alpine
+RUN npm install --global npm@latest
+WORKDIR /app
+COPY package.json .
+RUN cat package.json | jq 'del(.dependencies) | .devDependencies |= {prisma:.prisma}'
+RUN npm install
+COPY prisma prisma
+CMD ["npx", "prisma", "migrate", "deploy"]

@@ -1,5 +1,7 @@
 import Elysia, { t } from "elysia";
 
+import { messageSchema } from "@/lib/schemas";
+
 const HEALTHCHECK_MESSAGE = "Server is up" as const;
 
 export const healthRouter = new Elysia().get(
@@ -11,9 +13,9 @@ export const healthRouter = new Elysia().get(
   }),
   {
     response: t.Object({
-      message: t.Literal(HEALTHCHECK_MESSAGE),
+      ...messageSchema(HEALTHCHECK_MESSAGE).properties,
       uptime: t.Number(),
-      date: t.String(),
+      date: t.String({ examples: [new Date().toISOString()] }),
     }),
   },
 );

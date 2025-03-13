@@ -1,9 +1,13 @@
 import Elysia, { t } from "elysia";
 
-import { STATIC_CACHE_DURATION_MINS } from "@/lib/constants";
+import { EPISODE_EXAMPLE, STATIC_CACHE_DURATION_MINS } from "@/lib/constants";
 import { setCacheControl } from "@/lib/http";
-import { parseEpisodeRequest, searchForDownloadedEpisode } from "@/lib/liveseries";
-import { episodeSchema } from "@/lib/schemas";
+import {
+  ERROR_MESSAGES,
+  parseEpisodeRequest,
+  searchForDownloadedEpisode,
+} from "@/lib/liveseries";
+import { episodeSchema, messageSchema } from "@/lib/schemas";
 
 export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
   "/:showName/:season/:episode",
@@ -25,5 +29,10 @@ export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
     query: t.Object({
       allow_non_mp4: t.Optional(t.Boolean()),
     }),
+    response: {
+      500: messageSchema(ERROR_MESSAGES.directoryAccessError),
+      404: messageSchema(ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE)),
+      200: t.File(),
+    },
   },
 );

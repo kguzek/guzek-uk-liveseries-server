@@ -1,16 +1,29 @@
-FROM node:22.12-alpine
+FROM debian:12-slim AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install
 
-# Fails the build if they are not present
-COPY .env whitelist.json ./
+RUN apt update
+RUN apt install curl unzip -y
+RUN curl https://bun.sh/install | bash
 
+COPY package.json bun.lock ./
+RUN /root/.bun/bin/bun install --frozen-lockfile
+
+COPY prisma prisma
+RUN /root/.bun/bin/bun db:generate
+COPY src src
+COPY tsconfig.json .
+RUN /root/.bun/bin/bun run build
+
+
+FROM gcr.io/distroless/cc
+WORKDIR /app
+# Fails the deployment if they are not present
+COPY whitelist.json .env ./
 ENV NODE_ENV=production
-ENV NODE_PORT=5021
 ENV LOG_TO_CONSOLE='true'
-
-COPY . .
-RUN npm run compile
-EXPOSE 5021
-CMD ["node", "dist/index.js"]
+ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
+COPY --from=build /app/server server
+COPY --from=build /app/node_modules/.prisma/client node_modules/.prisma/client
+COPY --from=build /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 ${LD_LIBRARY_PATH}/
+EXPOSE 3000
+CMD ["./server"]
