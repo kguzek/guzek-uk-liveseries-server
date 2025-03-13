@@ -1,11 +1,11 @@
 import { ObjectEncodingOptions } from "fs";
 import { readdir } from "fs/promises";
-import path, { basename } from "path";
+import { basename, join } from "path";
 import type { Context, Static } from "elysia";
 
 import type { episodeSchema } from "./schemas";
 import type { Episode } from "./types";
-import { EPISODE_EXAMPLE, TORRENT_DOWNLOAD_PATH } from "./constants";
+import { TORRENT_DOWNLOAD_PATH } from "./constants";
 import { getVideoExtension } from "./http";
 import { getLogger } from "./logger";
 import { TorrentClient } from "./torrent-client";
@@ -57,7 +57,7 @@ export async function searchForDownloadedEpisode(
   logger.debug(`Searching for downloaded episode: '${search}'...`);
   let files: string[];
   try {
-    files = await readdir(path.resolve(TORRENT_DOWNLOAD_PATH), RECURSIVE_READ_OPTIONS);
+    files = await readdir(TORRENT_DOWNLOAD_PATH, RECURSIVE_READ_OPTIONS);
   } catch (error) {
     logger.error("Error loading downloaded episodes:", error);
     ctx.set.status = 500;
@@ -73,8 +73,8 @@ export async function searchForDownloadedEpisode(
       getVideoExtension(file) != null &&
       (allowAllVideoFiletypes || file.endsWith(".mp4")),
   );
-  const filename = TORRENT_DOWNLOAD_PATH + match;
   if (match) {
+    const filename = join(TORRENT_DOWNLOAD_PATH, match);
     const file = Bun.file(filename);
     if (await file.exists()) {
       return { file };
@@ -84,7 +84,7 @@ export async function searchForDownloadedEpisode(
   ctx.set.status = 404;
   return {
     error: {
-      message: ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE),
+      message: ERROR_MESSAGES.episodeNotFound(serialized),
     },
   };
 }
@@ -93,7 +93,7 @@ export function parseEpisodeRequest(
   ctx: Pick<Context<{ params: Static<typeof episodeSchema> }>, "params">,
 ) {
   const episode: Episode = ctx.params;
-  episode.showName = parseFilename(episode.showName);
+  episode.showName = parseFilename(decodeURIComponent(episode.showName));
   return episode;
 }
 

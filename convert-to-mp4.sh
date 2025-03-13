@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
 LOG_DIRECTORY=/var/log/transmission
-if [ ! -d $LOG_DIRECTORY ]; then
-  mkdir -p $LOG_DIRECTORY
+if [ ! -d "$LOG_DIRECTORY" ]; then
+  mkdir -p "$LOG_DIRECTORY"
 fi
 LOG_FILE="$LOG_DIRECTORY/script-done.log"
+if [ ! -f "$LOG_FILE" ]; then
+  touch "$LOG_FILE"
+fi
 VIDEO_PATTERN='\.(mkv|avi)$'
 
-if [[ $TR_TORRENT_NAME = "" ]]; then
+if [[ "$TR_TORRENT_NAME" = "" ]]; then
   FILE="$1"
 else
   FILE="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
@@ -15,7 +18,7 @@ fi
 
 function log {
   echo "$1"
-  echo "$(date +'%F @ %T'): $1" >>$LOG_FILE
+  echo "$(date +'%F @ %T'): $1" >>"$LOG_FILE"
 }
 
 function convert {

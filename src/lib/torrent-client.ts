@@ -202,7 +202,8 @@ export class TorrentClient {
 
     const resTorrentAdd = await this.fetch("torrent-add", {
       filename: link,
-      "download-dir": TORRENT_DOWNLOAD_PATH,
+      // TODO: check if this is necessary
+      // "download-dir": TORRENT_DOWNLOAD_PATH,
       paused: false,
     });
     const torrent = resTorrentAdd.arguments["torrent-added"];
