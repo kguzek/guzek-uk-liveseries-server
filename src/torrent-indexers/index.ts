@@ -1,12 +1,12 @@
 /** Base torrent indexer interface and utility functions for specific services to implement. */
 
-import axios from "axios";
-import parse from "node-html-parser";
 import type { HTMLElement, Node } from "node-html-parser";
-import { getLogger } from "guzek-uk-common/lib/logger";
-import type { BasicEpisode } from "guzek-uk-common/models";
-import { sanitiseShowName } from "guzek-uk-common/lib/sequelize";
-import { serialiseEpisode } from "guzek-uk-common/lib/util";
+import axios from "axios";
+import { parse } from "node-html-parser";
+
+import type { Episode, SearchResult } from "@/lib/types";
+import { sanitiseShowName, serialiseEpisode } from "@/lib/liveseries";
+import { getLogger } from "@/lib/logger";
 
 const logger = getLogger(__filename);
 
@@ -17,18 +17,6 @@ export const SIZE_UNIT_PREFIXES = {
   T: 1e12,
   P: 1e15,
 } as const;
-
-export interface SearchResult {
-  link?: string;
-  name: string;
-  age: string;
-  type: string;
-  files: number;
-  size: number;
-  sizeHuman: string;
-  seeders: number;
-  leechers: number;
-}
 
 export function getAnchorHref(parentNode: Node) {
   if (parentNode.nodeType !== 1) {
@@ -69,8 +57,7 @@ export function getSizeValue(value: string) {
   }
   const unitPrefix = match[2];
   if (!unitPrefix) return size; // e.g. "347 B"
-  const exponent =
-    SIZE_UNIT_PREFIXES[unitPrefix as keyof typeof SIZE_UNIT_PREFIXES];
+  const exponent = SIZE_UNIT_PREFIXES[unitPrefix as keyof typeof SIZE_UNIT_PREFIXES];
   if (!exponent) return null;
   return size * exponent;
 }
@@ -81,8 +68,7 @@ const average = (values: number[]) =>
 const standardDeviation = (values: number[], mean: number) =>
   Math.sqrt(average(values.map((val) => (val - mean) ** 2)));
 
-const zScore = (value: number, mean: number, sigma: number) =>
-  (value - mean) / sigma;
+const zScore = (value: number, mean: number, sigma: number) => (value - mean) / sigma;
 
 function isOutlier(value: number, mean: number, sigma: number) {
   const z = zScore(value, mean, sigma);
@@ -133,10 +119,7 @@ export abstract class TorrentIndexer {
       return null;
     }
     if (typeof res.data !== "string") {
-      logger.error(
-        "Received non-string HTML content from torrent indexer:",
-        res.data,
-      );
+      logger.error("Received non-string HTML content from torrent indexer:", res.data);
       return null;
     }
     return parse(res.data);
@@ -154,7 +137,9 @@ export abstract class TorrentIndexer {
     if (results.every((result) => result.seeders === 0)) {
       logger.warn("All torrent search results have 0 seeders");
       // Since all results have 0 seeders, return the one with the most leechers. Maybe they'll be peers
-      const resultsByLeechers = results.sort((a, b) => b.leechers - a.leechers);
+      const resultsByLeechers = results.sort(
+        (a, b) => (b.leechers ?? 0) - (a.leechers ?? 0),
+      );
       return resultsByLeechers[0];
     }
     const sizes = results.map((result) => result.size);
@@ -168,12 +153,10 @@ export abstract class TorrentIndexer {
     return topResult;
   }
 
-  async search(episode: BasicEpisode) {
+  async search(episode: Episode) {
     const showName = sanitiseShowName(episode.showName);
     const serialisedEpisode = serialiseEpisode(episode);
-    const query = `${showName}-${serialisedEpisode}`
-      .replace(/\s/g, "-")
-      .toLowerCase();
+    const query = `${showName}-${serialisedEpisode}`.replace(/\s/g, "-").toLowerCase();
     logger.info(`Searching for '${query}'.`);
     const data = await this.fetchRawResults(query);
     if (null == data) return [];
@@ -181,7 +164,7 @@ export abstract class TorrentIndexer {
   }
 
   /** Finds the top torrent result from the API, using `TorrentIndexer.selectTopResult`. */
-  async findTopResult(episode: BasicEpisode) {
+  async findTopResult(episode: Episode) {
     const results = await this.search(episode);
     if (!results || results.length === 0) {
       logger.warn("No search results found.");
@@ -212,8 +195,7 @@ export abstract class TableStyledTorrentIndexer extends TorrentIndexer {
     const headerCells = html.querySelectorAll(headerSelector) ?? [];
     const headers: Record<number, keyof SearchResult> = {};
     headerCells.forEach((cell, idx) => {
-      const key =
-        cell.textContent.trim() as keyof typeof this.TABLE_HEADER_TRANSLATIONS;
+      const key = cell.textContent.trim() as keyof typeof this.TABLE_HEADER_TRANSLATIONS;
       const value = this.TABLE_HEADER_TRANSLATIONS[key];
       if (!value) {
         logger.warn(`Unknown parsed table header value '${key}'.`);
@@ -221,8 +203,7 @@ export abstract class TableStyledTorrentIndexer extends TorrentIndexer {
       }
       headers[idx] = value;
     });
-    const resultRows =
-      html.querySelectorAll(this.TABLE_CSS_SELECTOR + " tr") ?? [];
+    const resultRows = html.querySelectorAll(this.TABLE_CSS_SELECTOR + " tr") ?? [];
     const results: SearchResult[] = [];
     let rowsToSkip = this.TABLE_HEADER_ROW;
     for (const row of resultRows) {
@@ -230,9 +211,7 @@ export abstract class TableStyledTorrentIndexer extends TorrentIndexer {
         rowsToSkip--;
         continue;
       }
-      const columns = (row.childNodes ?? []).filter(
-        (child) => child.nodeType === 1,
-      );
+      const columns = (row.childNodes ?? []).filter((child) => child.nodeType === 1);
       if (columns.length !== headerCells.length) continue;
       const result: SearchResult = {} as SearchResult;
       columns.forEach((column, idx) => {

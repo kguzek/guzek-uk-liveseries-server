@@ -1,26 +1,22 @@
 services:
   db:
-    image: mariadb
-    container_name: mariadb
+    image: postgres
+    container_name: postgresql
     restart: always
+    shm_size: 128mb
     environment:
-      - MARIADB_DATABASE=liveseries
-      - MARIADB_USER=${MY_SQL_DB_USER}
-      - MARIADB_PASSWORD=${MY_SQL_DB_PASSWORD}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./scripts/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME:-liveseries}
     healthcheck:
-      test: [ "CMD", "mariadb", "-h", "localhost", "-u${MY_SQL_DB_USER}", "-p${MY_SQL_DB_PASSWORD}", "-e", "SELECT 1" ]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
+      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}" ]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
   transmission:
-    build:
-      context: .
-      dockerfile: Dockerfile.transmission
+    image: liveseries/transmission
     container_name: transmission
     restart: always
     environment:
@@ -32,40 +28,55 @@ services:
       - PASS=${TR_PASSWORD}
       - TRANSMISSION_SCRIPT_TORRENT_DONE_ENABLED=true
       - TRANSMISSION_SCRIPT_TORRENT_DONE_FILENAME=/convert-to-mp4.sh
-      - TR_DOWNLOAD_PATH=${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}
-      - TR_CONFIG_PATH=${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}
-      - TR_WATCH_PATH=${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}
+      - TRANSMISSION_PEER_PORT=49917
+      - TR_DOWNLOAD_PATH=/downloads
+      - TR_CONFIG_PATH=/config
+      - TR_WATCH_PATH=/watch
     volumes:
-      - ${TR_DOWNLOAD_PATH}:/downloads
-      - ${TR_CONFIG_PATH}:/config
-      - ${TR_WATCH_PATH}:/watch
+      - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
+      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
+      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
       - ./convert-to-mp4.sh:/convert-to-mp4.sh
     ports:
       - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
-    container_name: liveseries
-    restart: always
-    environment:
-      - MY_SQL_DB_NAME=liveseries
-      - MY_SQL_DB_HOST=db
-      - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
-      - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
-      - TR_DOWNLOAD_PATH=/downloads
-    volumes:
-      - ./whitelist.json:/app/whitelist.json
-      - ${TR_DOWNLOAD_PATH}:/downloads
-    ports:
-      - "${APP_PORT:-80}:5021"
+      - 49917:49917
+      - 49917:49917/udp
+    healthcheck:
+      test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+  migrations:
+    image: liveseries/migrations
+    container_name: migrations
+    restart: no
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME}
+  server:
+    image: liveseries/server
+    container_name: liveseries
+    restart: always
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
       transmission:
-        condition: service_started
-
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME}
+      - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
+      - TR_DOWNLOAD_PATH=/downloads
+      - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
+      - LOG_TO_CONSOLE=true
+      - APP_PORT=5017
+      - SUBTITLE_CACHE_PATH=/subtitles
+    volumes:
+      - ./whitelist.json:/app/whitelist.json
+      - ${TR_DOWNLOAD_PATH}:/downloads
+      - ${SUBTITLE_CACHE_PATH}:/subtitles
+    ports:
+      - "${APP_PORT:-5017}:5017"
 volumes:
-  mariadb_data:
+  postgres_data:

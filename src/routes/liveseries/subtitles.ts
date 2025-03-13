@@ -1,80 +1,60 @@
-import express, { Request, Response } from "express";
+import { join, resolve } from "path";
+import { Elysia, t } from "elysia";
 
-import fs from "fs/promises";
-import type { BasicEpisode } from "guzek-uk-common/models";
-import { STATIC_CACHE_DURATION_MINS } from "guzek-uk-common/enums";
+import { STATIC_CACHE_DURATION_MINS } from "@/lib/constants";
+import { setCacheControl } from "@/lib/http";
+import { parseEpisodeRequest } from "@/lib/liveseries";
+import { episodeSchema, messageSchema } from "@/lib/schemas";
 import {
   downloadSubtitles,
-  getSubtitleClient,
+  ERROR_MESSAGES,
+  getSubtitleFile,
   SUBTITLES_DEFAULT_LANGUAGE,
-} from "../../subtitles";
-import { logResponse, sendError } from "guzek-uk-common/lib/http";
-import { setCacheControl, getStatusText } from "guzek-uk-common/lib/util";
-import {
-  handleTorrentRequest,
-  searchForDownloadedEpisode,
-} from "../../liveseries";
-import { TORRENT_DOWNLOAD_PATH } from "../../config";
+} from "@/lib/subtitles";
 
-export const router = express.Router();
-
-const SUBTITLES_PATH = "/var/cache/guzek-uk/subtitles";
+const SUBTITLES_PATH = resolve(
+  process.env.SUBTITLE_CACHE_PATH || "/var/cache/guzek-uk/subtitles",
+);
 const SUBTITLES_FILENAME = "subtitles.vtt";
 /** If set to `true`, doesn't use locally downloaded subtitles file. */
 const SUBTITLES_FORCE_DOWNLOAD_NEW = false;
 
-async function getSubtitles(
-  req: Request,
-  res: Response,
-  episode: BasicEpisode,
-  filename: string,
-) {
-  const directory = `${SUBTITLES_PATH}/${episode.showName}/${episode.season}/${episode.episode}`;
-  const filepath = `${directory}/${SUBTITLES_FILENAME}`;
-  try {
-    await fs.access(filepath);
-    if (process.env.SUBTITLES_API_KEY_DEV && SUBTITLES_FORCE_DOWNLOAD_NEW) {
-      throw new Error("Force fresh download of subtitles");
-    }
-  } catch (error) {
-    const language = `${
-      req.query.lang || SUBTITLES_DEFAULT_LANGUAGE
-    }`.toLowerCase();
-    const errorMessage = await downloadSubtitles(
-      directory,
-      filepath,
-      filename,
-      episode,
-      language,
+export const subtitlesRouter = new Elysia({ prefix: "/liveseries/subtitles" }).get(
+  "/:showName/:season/:episode",
+  async (ctx) => {
+    const episode = parseEpisodeRequest(ctx);
+    const directory = join(
+      SUBTITLES_PATH,
+      episode.showName,
+      episode.season.toString(),
+      episode.episode.toString(),
     );
-    if (errorMessage) {
-      sendError(res, 400, { message: errorMessage });
-      return;
+    const filepath = join(directory, SUBTITLES_FILENAME);
+    const forceDownload =
+      process.env.SUBTITLES_API_KEY_DEV && SUBTITLES_FORCE_DOWNLOAD_NEW;
+    const file = getSubtitleFile(filepath);
+    if (!forceDownload && (await file.exists())) {
+      setCacheControl(ctx, STATIC_CACHE_DURATION_MINS);
+      return file;
     }
-  }
-  setCacheControl(res, STATIC_CACHE_DURATION_MINS);
-  res.status(200).sendFile(filepath);
-  logResponse(res, `${getStatusText(200)} (${SUBTITLES_FILENAME})`);
-}
-
-router.get("/:showName/:season/:episode", (req, res) =>
-  handleTorrentRequest(
-    req,
-    res,
-    (torrent, episode) => getSubtitles(req, res, episode, torrent.name),
-    async (episode) => {
-      const filename = await searchForDownloadedEpisode(res, episode);
-      if (!filename) return;
-      getSubtitles(
-        req,
-        res,
-        episode,
-        filename.replace(TORRENT_DOWNLOAD_PATH, ""),
-      );
+    const language = SUBTITLES_DEFAULT_LANGUAGE;
+    return await downloadSubtitles(ctx, directory, filepath, episode, language);
+  },
+  {
+    params: episodeSchema,
+    response: {
+      200: t.File(),
+      404: messageSchema(ERROR_MESSAGES.subtitlesNotFound),
+      500: messageSchema(
+        ERROR_MESSAGES.subtitleClientNotConfigured,
+        ERROR_MESSAGES.subtitleServiceBadResponse,
+        ERROR_MESSAGES.subtitlesMalformatted,
+        ERROR_MESSAGES.subtitleServiceDownloadError,
+        ERROR_MESSAGES.subtitleClientMalformattedResponse,
+        ERROR_MESSAGES.subtitleServiceDownloadError2,
+        ERROR_MESSAGES.directoryAccessError,
+      ),
+      503: messageSchema(ERROR_MESSAGES.subtitleServiceNotReachable),
     },
-  ),
+  },
 );
-
-export function init() {
-  getSubtitleClient();
-}

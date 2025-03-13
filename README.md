@@ -4,7 +4,7 @@
 
 ## Intro
 
-This is a free, open source self-hostable Express.js server which allows you to automatically download TV shows through [LiveSeries](https://www.guzek.uk/liveseries).
+This is a free, open source self-hostable web server written using [Elysia](https://elysiajs.com/) which allows you to automatically download TV shows through [LiveSeries](https://www.guzek.uk/liveseries).
 Once you get it up and running on your machine, all you need to do is visit [www.guzek.uk](https://www.guzek.uk), create an account, and enter your LiveSeries server's URL in the appropriate box in your profile.
 Then, simply navigate to [/liveseries](https://www.guzek.uk/liveseries), select a couple shows to watch -- and watch the magic happen!
 
@@ -40,24 +40,20 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
    cd guzek-uk-liveseries-server
    ```
 
-3. Configure your environment variables. Start by copying `template.env` to `.env`:
+3. Configure your environment variables. Start by copying `.env.template` to `.env`:
 
    ```bash
-   cp {template,}.env
+   cp .env{.template,}
    ```
 
    The fields that you **must** update are:
 
-   - `MY_SQL_DB_USER`
-   - `MY_SQL_DB_PASSWORD`
+   - `DATABASE_USER`
+   - `DATABASE_PASSWORD`
    - `TR_USER`
    - `TR_PASSWORD`
 
-   For best security, it is a good decision to set `MARIADB_ROOT_PASSWORD`. This isn't used by the application, but it allows you to access the data manually using the root account in case something goes wrong.
-
    If you leave out the rest, the application will work just fine.
-
-   IMPORTANT: If you modify `MY_SQL_DB_NAME`, make sure to update `/scripts/create_schema.sql` to reflect this change. By default, this script assumes your database is named `liveseries`. The other scripts are not used when installing via docker compose, so you can ignore them.
 
 4. Configure your server whitelist. If you haven't done so already, register an account at [www.guzek.uk](https://www.guzek.uk/signup), and copy your account UUID from your profile page. Then, copy `whitelist.template.json` into `whitelist.json`:
 
@@ -80,7 +76,7 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
    sudo docker compose up -d
    ```
 
-   This will also automatically install the dependencies, MariaDB server and Transmission torrent client. The default location for your downloaded files is `/data/transmission/downloads/complete`. You can use the `down` command to stop the application.
+   This will also automatically install the dependencies, PostgreSQL server and Transmission torrent client. The default location for your downloaded files is `/data/transmission/downloads/complete`. You can use the `down` command to stop the application.
 
    ```bash
    sudo docker compose down
@@ -98,36 +94,25 @@ The manual installation involves more steps than the docker compose method, but 
    git clone --depth 1 https://github.com/kguzek/guzek-uk-liveseries-server
    ```
 
-2. Install the project dependencies:
+2. Install the project dependencies, including bun:
 
    ```bash
+   curl -fsSL https://bun.sh/install | bash
+   source ~/.bashrc
    cd guzek-uk-liveseries-server
-   npm install
+   bun install
    ```
 
-3. Download & install MySQL or MariaDB (either is fine, I recommend MariaDB):
+3. Download & install PostgreSQL from <https://www.postgresql.org/download/>.
+
+4. Store the credentials to your database + user in `.env`, following the template in `.env.template`
 
    ```bash
-   curl -LsS https://r.mariadb.com/downloads/mariadb_repo_setup | sudo bash
-   ```
-
-4. Change the credentials in `scripts/create_user.sql`, then run the SQL scripts provided in `scripts`, in the order specified in `scripts/README.md`:
-
-   ```bash
-   vi scripts/create_user.sql
-   mysql -u [username] -p
-   mysql> source scripts/create_schema.sql
-   mysql> source scripts/create_user.sql
-   ```
-
-5. Store the credentials to your database + user in `.env`, following the template in `template.env`
-
-   ```bash
-   cp {template,}.env
+   cp .env{.template,}
    vi .env
    ```
 
-6. Download & install [Transmission](https://transmissionbt.com/download):
+5. Download & install [Transmission](https://transmissionbt.com/download):
 
    ```bash
    apt install transmission
@@ -139,20 +124,20 @@ The manual installation involves more steps than the docker compose method, but 
    dnf install transmission
    ```
 
-7. Create a username and password for the Transmission daemon and also store it in `.env` (Transmission settings.json field `"rpc-password"`):
+6. Create a username and password for the Transmission daemon and also store it in `.env` (Transmission settings.json field `"rpc-password"`):
 
    ```bash
    systemctl stop transmission-daemon
    vi /etc/transmission-daemon/settings.json
    ```
 
-8. Download & install [ffmpeg](https://ffmpeg.org/download.html), if it isn't installed already:
+7. Download & install [ffmpeg](https://ffmpeg.org/download.html), if it isn't installed already:
 
    ```bash
    ffmpeg -version > /dev/null 2>&1 || apt install ffmpeg
    ```
 
-9. Add `convert-to-mp4.sh` as a torrent-done script for Transmission, so that the `.mkv` videos are streamable through a web browser:
+8. Add `convert-to-mp4.sh` as a torrent-done script for Transmission, so that the `.mkv` videos are streamable through a web browser:
 
    ```json
    {
@@ -169,48 +154,38 @@ The manual installation involves more steps than the docker compose method, but 
    systemctl start transmission-daemon
    ```
 
-10. Optional (for automatic subtitle downloading): create an account at `opensubtitles.com` and [create a developer API consumer](https://www.opensubtitles.com/en/consumers). Then, store your OpenSubtitles API key in `.env` as `SUBTITLES_API_KEY_DEV`; I haven't figured out how to use the production keys yet (ignore the other `SUBTITLES_API_*` fields)
-11. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
+9. Optional (for automatic subtitle downloading): create an account at `opensubtitles.com` and [create a developer API consumer](https://www.opensubtitles.com/en/consumers). Then, store your OpenSubtitles API key in `.env` as `SUBTITLES_API_KEY_DEV`; I haven't figured out how to use the production keys yet (ignore the other `SUBTITLES_API_*` fields)
+10. Copy `whitelist.template.json` to a new file called `whitelist.json`, and add to it your user UUID. This can be found at your Guzek UK profile -- only registered users listed here will be able to access your server! You can safely remove the UUID that's there by default (my personal account UUID), it's just there to show the format. See [the relevant section below](#automatic-unwatched-episodes-checking) for the opt-in CRON user UUID to add to the whitelist.
 
     ```bash
     cp whitelist{.template,}.json
     vi whitelist.json
     ```
 
-12. Transpile the TypeScript code into JavaScript:
+11. Apply the database schema to your local database using a Prisma migration and generate the client:
 
     ```bash
-    npm run compile
+    bunx prisma migrate deploy && bun run db:generate
+    ```
+
+12. Compile the TypeScript code into an executable:
+
+    ```bash
+    bun run build
     ```
 
 13. Run the server:
 
     ```bash
-    npm run prod
+    ./server
     ```
 
-14. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port `5021` to whatever external port you choose)
-15. Add the URL of your server to your Guzek UK profile (for same-network access you can use a local address like `http://10.0.0.10:5021` or even `http://localhost:5021` -- requests are all made through the browser)
+14. Optional: expose your server to the Internet by port forwarding it in your router settings (expose internal port `5017` to whatever external port you choose)
+15. Add the URL of your server to your Guzek UK profile (for same-network access you can use a local address like `http://10.0.0.10:5017` or even `http://localhost:5017` -- requests are all made through the browser)
 
 ## FAQ
 
-### #1 How to update the server
-
-If the code on [github.com](https://github.com/kguzek/guzek-uk-liveseries-server) was updated since you first installed this program, you may need to update it for critical security fixes as well as new features and bug fixes.
-In order to update your installation, you will first need to navigate to the location to which you cloned the repository and pull the origin.
-
-```bash
-cd guzek-uk-liveseries-server
-git pull
-```
-
-Then, assuming you installed via docker compose, all you have to do is re-build the `server` container. This works even if the container is currently running!
-
-```bash
-sudo docker compose up -d --build server
-```
-
-### #2 How to update the whitelist
+### #1 How to update the whitelist
 
 The steps to updating the whitelist are almost the same as updating the server. Instead of running `git pull`, simply edit the `whitelist.json`, and then re-build the server using the same command as above.
 
@@ -231,7 +206,7 @@ That way the central server will be able to communicate with your server and dow
 This server installation features a customisable torrent scraper, accessible as a REST API.
 
 ```bash
-curl localhost:5021/liveseries/torrents/[show-name]/[season]/[episode]
+curl localhost:5017/liveseries/torrents/[show-name]/[season]/[episode]
 ```
 
 Available query parameters:
@@ -245,6 +220,13 @@ Example:
 ```bash
 curl localhost:5021/liveseries/torrents/[show-name]/[season]/[episode]?sort_by=size&sort_direction=ascending
 ```
+
+For more information on available routes, refer to the next section.
+
+### Documentation
+
+The Elysia server contains automatic Swagger documentation generation.
+Visit the `/swagger` endpoint for a detailed layout of each route along with route parameters, search queries, request bodies and response codes.
 
 ## Copyright
 

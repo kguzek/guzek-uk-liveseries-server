@@ -1,31 +1,38 @@
-import express from "express";
-import { sendFileStream } from "guzek-uk-common/lib/http";
+import Elysia, { t } from "elysia";
+
+import { EPISODE_EXAMPLE, STATIC_CACHE_DURATION_MINS } from "@/lib/constants";
+import { setCacheControl } from "@/lib/http";
 import {
-  handleTorrentRequest,
+  ERROR_MESSAGES,
+  parseEpisodeRequest,
   searchForDownloadedEpisode,
-} from "../../liveseries";
-import { TORRENT_DOWNLOAD_PATH } from "../../config";
-import { getLogger } from "guzek-uk-common/lib/logger";
+} from "@/lib/liveseries";
+import { episodeSchema, messageSchema } from "@/lib/schemas";
 
-export const router = express.Router();
-
-const logger = getLogger(__filename);
-
-router.get("/:showName/:season/:episode", (req, res) =>
-  handleTorrentRequest(
-    req,
-    res,
-    (torrent) =>
-      sendFileStream(req, res, TORRENT_DOWNLOAD_PATH + torrent.name, "mp4"),
-    async (episode) => {
-      const filename = await searchForDownloadedEpisode(
-        res,
-        episode,
-        !!req.query.allow_non_mp4,
-      );
-      logger.info(`Backup video search result: '${filename}'`);
-      if (!filename) return;
-      sendFileStream(req, res, filename);
+export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
+  "/:showName/:season/:episode",
+  async function (ctx) {
+    const episode = parseEpisodeRequest(ctx);
+    const result = await searchForDownloadedEpisode(
+      ctx,
+      episode,
+      ctx.query.allow_non_mp4,
+    );
+    if (result.error == null) {
+      setCacheControl(ctx, STATIC_CACHE_DURATION_MINS);
+      return result.file;
+    }
+    return result.error;
+  },
+  {
+    params: episodeSchema,
+    query: t.Object({
+      allow_non_mp4: t.Optional(t.Boolean()),
+    }),
+    response: {
+      500: messageSchema(ERROR_MESSAGES.directoryAccessError),
+      404: messageSchema(ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE)),
+      200: t.File(),
     },
-  ),
+  },
 );
