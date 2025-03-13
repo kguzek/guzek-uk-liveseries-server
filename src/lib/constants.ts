@@ -51,3 +51,5 @@ export const TORRENT_DOWNLOAD_PATH = `${
 }${process.env.TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH === "true" ? "/complete" : ""}/`;
 
 export const STATIC_CACHE_DURATION_MINS = 30 * 24 * 60; // 30 days in minutes
+
+export const EPISODE_EXAMPLE = "'Chicago Fire' S13E15";

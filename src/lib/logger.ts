@@ -82,6 +82,14 @@ const isError = (metadata: any): metadata is { stack: string } =>
 const containsIp = (metadata: any): metadata is { ip: string } =>
   typeof (metadata as any).ip === "string";
 
+function tryStringify(obj: any) {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch {
+    return "<unable to stringify JSON object>";
+  }
+}
+
 const logFormat = format.printf(({ timestamp, level, message, metadata }) => {
   if (typeof message !== "string") message = JSON.stringify(message);
   message = `${COLORS.message[level] ?? ""}${
@@ -92,7 +100,7 @@ const logFormat = format.printf(({ timestamp, level, message, metadata }) => {
   ({ filename, ...metadata } = metadata as Record<string, any>);
   const metaProvided = metadata != null && Object.keys(metadata).length > 0;
   let meta = "";
-  const prettyMeta = `\n${JSON.stringify(metadata, null, 2)}`;
+  const prettyMeta = `\n${tryStringify(metadata)}`;
   let ip = "";
   if (metaProvided) {
     switch (level as keyof typeof LOG_LEVELS) {

@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development bun run --watch src/index.ts",
-    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts"
+    "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
+    "db:generate": "prisma generate"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
   ],
   "dependencies": {
     "@elysiajs/swagger": "^1.2.2",
+    "@prisma/client": "^6.5.0",
     "axios": "^1.8.2",
     "elysia": "latest",
     "node-html-parser": "^7.0.1",
@@ -35,7 +37,8 @@
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "bun-types": "latest",
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "prisma": "^6.5.0"
   },
   "module": "src/index.js"
 }

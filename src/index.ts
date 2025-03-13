@@ -1,8 +1,7 @@
 import { swagger } from "@elysiajs/swagger";
-import { file } from "bun";
 import { Elysia } from "elysia";
 
-import { getStatusText, setCacheControl } from "@/lib/http";
+import { getStatusText } from "@/lib/http";
 import { getLogger } from "@/lib/logger";
 import { logRequest, logResponse } from "@/middleware/logging";
 import { healthRouter } from "@/routes/health";
@@ -17,8 +16,29 @@ import { staticRouter } from "./routes/static";
 
 const logger = getLogger(__filename);
 
+const VERSION = process.env.npm_package_version || "4.0.0";
 const app = new Elysia()
-  .use(swagger())
+  .use(
+    swagger({
+      documentation: {
+        info: {
+          title: "Guzek UK LiveSeries Server",
+          version: VERSION,
+          contact: {
+            name: "Konrad Guzek",
+            email: "konrad@guzek.uk",
+            url: "https://www.guzek.uk",
+          },
+          description:
+            "The decentralised LiveSeries server for storing and streaming your favourite TV shows.",
+          license: {
+            name: "AGPL-3.0",
+            url: "https://www.gnu.org/licenses/agpl-3.0.html#license-text",
+          },
+        },
+      },
+    }),
+  )
   .onBeforeHandle(logRequest)
   .onAfterResponse(logResponse)
   .onError((ctx) => {
@@ -41,10 +61,10 @@ const app = new Elysia()
   .use(subtitlesRouter)
   .use(videoRouter)
   .use(downloadedEpisodesRouter)
-  .listen(3000);
+  .listen(process.env.APP_PORT || 5017);
 
 logger.http(
-  `🦊 LiveSeries Server is running on ${app.server?.hostname}:${app.server?.port}`,
+  `🦊 LiveSeries Server ${VERSION} is running on ${app.server?.hostname}:${app.server?.port}`,
 );
 
 initialiseSubtitleClient();
