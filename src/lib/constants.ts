@@ -1,3 +1,5 @@
+import { join, resolve } from "path";
+
 export const TORRENT_NAME_PATTERN = /^(.+)(?:\.|\s|\+)S0?(\d+)E0?(\d+)/;
 
 export const DownloadStatus = {
@@ -45,11 +47,13 @@ export const STATUS_CODES = {
   ...SERVER_ERROR_STATUS_CODES,
 } as const;
 
-export const TORRENT_DOWNLOAD_PATH = `${
-  process.env.TR_DOWNLOAD_PATH?.replace(/\/$/, "") ||
-  "/var/lib/transmission-daemon/downloads"
-}${process.env.TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH === "true" ? "/complete" : ""}/`;
+export const TORRENT_DOWNLOAD_PATH = resolve(
+  join(
+    process.env.TR_DOWNLOAD_PATH || "/var/lib/transmission-daemon/downloads",
+    process.env.TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH === "true" ? "/complete" : "",
+  ),
+);
 
 export const STATIC_CACHE_DURATION_MINS = 30 * 24 * 60; // 30 days in minutes
 
-export const EPISODE_EXAMPLE = "'Chicago Fire' S13E15";
+export const EPISODE_EXAMPLE = "Chicago Fire S13E15";

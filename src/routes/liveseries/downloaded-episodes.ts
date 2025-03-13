@@ -1,3 +1,4 @@
+import { join } from "path";
 import type { Context } from "elysia";
 import { Elysia, t } from "elysia";
 
@@ -61,8 +62,8 @@ async function downloadEpisode(
 const RESPONSE_MESSAGES = {
   getAllEpisodesError: "An unknown error occurred while reading the database.",
   episodeAlreadyDownloaded: (episode: string) =>
-    `Episode ${episode} is already downloaded.`,
-  invalidEpisode: (episode: string) => `Invalid episode ${episode}.`,
+    `Episode '${episode}' is already downloaded.`,
+  invalidEpisode: (episode: string) => `Invalid episode '${episode}'.`,
   episodeNotFound: "Episode not found in the database.",
   deletionSuccess: "Episode deleted successfully.",
   deletionErrorDatabase: "Could not delete the episode from the database.",
@@ -109,7 +110,7 @@ export const downloadedEpisodesRouter = new Elysia({
       const { showName: showNameUnsanitised, season, episode, showId } = ctx.body;
       const showName = sanitiseShowName(showNameUnsanitised);
 
-      const serialised = `'${showName}' ${serialiseEpisode({ episode, season })}`;
+      const serialised = `${showName} ${serialiseEpisode({ episode, season })}`;
       const result = await prisma.downloadedEpisode.findFirst({
         where: {
           AND: [
@@ -185,7 +186,7 @@ export const downloadedEpisodesRouter = new Elysia({
           };
         }
         filename = torrent.name;
-        file = Bun.file(TORRENT_DOWNLOAD_PATH + filename);
+        file = Bun.file(join(TORRENT_DOWNLOAD_PATH, filename));
       } else {
         const result = await searchForDownloadedEpisode(ctx, episode);
         if (result.error != null) {

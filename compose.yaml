@@ -78,9 +78,11 @@ services:
       - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
       - TR_DOWNLOAD_PATH=/downloads
       - APP_PORT=5017
+      - SUBTITLE_CACHE_PATH=/subtitles
     volumes:
       - ./whitelist.json:/app/whitelist.json
       - ${TR_DOWNLOAD_PATH}:/downloads
+      - ${SUBTITLE_CACHE_PATH}:/subtitles
     ports:
       - "${APP_PORT:-5017}:5017"
 volumes:
