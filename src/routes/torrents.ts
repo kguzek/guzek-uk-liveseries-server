@@ -2,15 +2,15 @@ import Elysia, { t } from "elysia";
 
 import type { Episode, SearchResult } from "@/lib/types";
 import { getLogger } from "@/lib/logger";
-import { episodeSchema, searchResultSchema } from "@/lib/schemas";
+import { episodeSchema, messageSchema, searchResultSchema } from "@/lib/schemas";
 import { TorrentIndexer } from "@/torrent-indexers";
 import { Eztv } from "@/torrent-indexers/eztv";
 
 const logger = getLogger(__filename);
 const indexer: TorrentIndexer = new Eztv();
 
-const NO_TORRENTS_FOUND_MESSAGE = "No torrents found for this episode." as const;
-const TORRENTS_ERROR_MESSAGE = "Could not obtain torrent data." as const;
+const NOT_FOUND_MESSAGE = "No torrents found for this episode.";
+const ERROR_SEARCHING_MESSAGE = "Could not obtain torrent data.";
 
 export const torrentsRouter = new Elysia().get(
   "/torrents/:showName/:season/:episode",
@@ -29,13 +29,13 @@ export const torrentsRouter = new Elysia().get(
       logger.error("Error searching for episode:", error);
       set.status = 500;
       return {
-        message: TORRENTS_ERROR_MESSAGE,
+        message: ERROR_SEARCHING_MESSAGE,
       };
     }
     if (results.length === 0) {
       set.status = 404;
       return {
-        message: NO_TORRENTS_FOUND_MESSAGE,
+        message: NOT_FOUND_MESSAGE,
       };
     }
     if (selectTopResult) {
@@ -89,8 +89,8 @@ export const torrentsRouter = new Elysia().get(
     }),
     response: {
       200: t.Union([searchResultSchema, t.Array(searchResultSchema)]),
-      404: t.Object({ message: t.Literal(NO_TORRENTS_FOUND_MESSAGE) }),
-      500: t.Object({ message: t.Literal(TORRENTS_ERROR_MESSAGE) }),
+      404: messageSchema(NOT_FOUND_MESSAGE),
+      500: messageSchema(ERROR_SEARCHING_MESSAGE),
     },
   },
 );

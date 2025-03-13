@@ -1,9 +1,12 @@
 import { mkdir } from "fs/promises";
 import { resolve } from "path";
+import type { BunFile } from "bun";
 import type { Context } from "elysia";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 
 import type { Episode } from "./types";
+import { STATIC_CACHE_DURATION_MINS } from "./constants";
+import { setCacheControl } from "./http";
 import { serialiseEpisode } from "./liveseries";
 import { getLogger } from "./logger";
 
@@ -79,22 +82,36 @@ export async function initialiseSubtitleClient() {
   logger.verbose("Subtitles API user:", data.user);
 }
 
+export const ERROR_MESSAGES = {
+  subtitleClientNotConfigured:
+    "The subtitle service was not configured correctly. Please contact the server administrator.",
+  subtitleServiceBadResponse:
+    "The subtitle service returned a bad response. Please try again later.",
+  subtitleServiceNotReachable: "The subtitle service is not reachable.",
+  subtitlesMalformatted: "The subtitles for this request are malformatted.",
+  subtitlesNotFound: "There are no subtitles for this episode.",
+  subtitleServiceDownloadError:
+    "Subtitles for this episode were found but could not be downloaded. Try again later.",
+  subtitleClientMalformattedResponse:
+    "Subtitles for this episode were found but malformatted. Try again later.",
+  subtitleServiceDownloadError2: "Downloading the subtitles failed. Try again later.",
+  directoryAccessError: "Could not save the subtitles to the server.",
+};
+
 export async function downloadSubtitles(
-  ctx: Pick<Context, "set">,
+  ctx: Pick<Context, "set" | "headers">,
   directory: string,
   filepath: string,
   episode: Episode,
   language: string,
-): Promise<Response | { message: string }> {
+): Promise<BunFile | { message: string }> {
   function reject(message: string, code: number = 500) {
     ctx.set.status = code;
     return { message };
   }
 
   if (!subtitleClient) {
-    return reject(
-      "The subtitle service was not configured correctly. Please contact the server administrator.",
-    );
+    return reject(ERROR_MESSAGES.subtitleClientNotConfigured);
   }
 
   let res: AxiosResponse;
@@ -115,7 +132,7 @@ export async function downloadSubtitles(
       return reject(error.message, error.response.status);
     } else {
       logger.error("Network error getting subtitles:", error);
-      return reject("The subtitle service is not reachable.", 503);
+      return reject(ERROR_MESSAGES.subtitleServiceNotReachable, 503);
     }
   }
   const data = res?.data as any;
@@ -123,10 +140,10 @@ export async function downloadSubtitles(
   const results = data?.data as any[];
   if (!Array.isArray(results)) {
     logger.error("Received malformatted response from OpenSubtitles", data);
-    return reject("The subtitles for this request are malformatted.");
+    return reject(ERROR_MESSAGES.subtitlesMalformatted);
   }
   if (!resultCount || !results?.length) {
-    return reject("There are no subtitles for this episode.", 404);
+    return reject(ERROR_MESSAGES.subtitlesNotFound, 404);
   }
   const sorted = results.sort(
     (a, b) => b.attributes.download_count - a.attributes.download_count,
@@ -167,15 +184,11 @@ export async function downloadSubtitles(
     } else {
       logger.error("Network error posting subtitles:", error);
     }
-    return reject(
-      "Subtitles for this episode were found but could not be downloaded. Try again later.",
-    );
+    return reject(ERROR_MESSAGES.subtitleServiceDownloadError);
   }
   const url = res.data.link;
   if (!url) {
-    return reject(
-      "Subtitles for this episode were found but malformatted. Try again later.",
-    );
+    return reject(ERROR_MESSAGES.subtitleClientMalformattedResponse);
   }
   try {
     res = await axios({
@@ -185,16 +198,17 @@ export async function downloadSubtitles(
     });
   } catch (error) {
     logger.error(`Requst GET ${url} failed:`, error);
-    return reject("Downloading the subtitles failed. Try again later.");
+    return reject(ERROR_MESSAGES.subtitleServiceDownloadError2);
   }
   try {
     await mkdir(directory, { recursive: true });
   } catch (error) {
     logger.error(`Error while mkdir ${directory}:`, error);
-    return reject("Could not save the subtitles to the server.");
+    return reject(ERROR_MESSAGES.directoryAccessError);
   }
   const arrayBuffer: ArrayBuffer = res.data;
   const file = getSubtitleFile(filepath);
   await file.write(arrayBuffer);
-  return new Response(file);
+  setCacheControl(ctx, STATIC_CACHE_DURATION_MINS);
+  return file;
 }
