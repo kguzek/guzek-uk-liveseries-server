@@ -20,7 +20,6 @@ WORKDIR /app
 # Fails the deployment if they are not present
 COPY whitelist.json .env ./
 ENV NODE_ENV=production
-ENV LOG_TO_CONSOLE='true'
 ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
 COPY --from=build /app/server server
 COPY --from=build /app/node_modules/.prisma/client node_modules/.prisma/client

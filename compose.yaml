@@ -15,12 +15,8 @@ services:
       retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
   transmission:
-    build:
-      context: .
-      dockerfile: Dockerfile.transmission
+    image: liveseries/transmission
     container_name: transmission
     restart: always
     environment:
@@ -37,9 +33,9 @@ services:
       - TR_CONFIG_PATH=/config
       - TR_WATCH_PATH=/watch
     volumes:
-      - ${TR_DOWNLOAD_PATH}:/downloads
-      - ${TR_CONFIG_PATH}:/config
-      - ${TR_WATCH_PATH}:/watch
+      - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
+      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
+      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
       - ./convert-to-mp4.sh:/convert-to-mp4.sh
     ports:
       - 9091:9091
@@ -51,9 +47,7 @@ services:
       timeout: 10s
       retries: 3
   migrations:
-    build:
-      context: .
-      dockerfile: Dockerfile.migrations
+    image: liveseries/migrations
     container_name: migrations
     restart: no
     depends_on:
@@ -62,9 +56,7 @@ services:
     environment:
       - DATABASE_URL=postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME}
   server:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
+    image: liveseries/server
     container_name: liveseries
     restart: always
     depends_on:
@@ -75,8 +67,9 @@ services:
     environment:
       - DATABASE_URL=postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME}
       - TRANSMISSION_URL=http://transmission:9091/transmission/rpc
-      - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
       - TR_DOWNLOAD_PATH=/downloads
+      - TR_APPEND_COMPLETE_TO_DOWNLOAD_PATH=true
+      - LOG_TO_CONSOLE=true
       - APP_PORT=5017
       - SUBTITLE_CACHE_PATH=/subtitles
     volumes:

@@ -162,10 +162,10 @@ The manual installation involves more steps than the docker compose method, but 
     vi whitelist.json
     ```
 
-11. Apply the database schema to your local database using a Prisma migration:
+11. Apply the database schema to your local database using a Prisma migration and generate the client:
 
     ```bash
-    bunx prisma migrate deploy
+    bunx prisma migrate deploy && bun run db:generate
     ```
 
 12. Compile the TypeScript code into an executable:
@@ -185,23 +185,7 @@ The manual installation involves more steps than the docker compose method, but 
 
 ## FAQ
 
-### #1 How to update the server
-
-If the code on [github.com](https://github.com/kguzek/guzek-uk-liveseries-server) was updated since you first installed this program, you may need to update it for critical security fixes as well as new features and bug fixes.
-In order to update your installation, you will first need to navigate to the location to which you cloned the repository and pull the origin.
-
-```bash
-cd guzek-uk-liveseries-server
-git pull
-```
-
-Then, assuming you installed via docker compose, all you have to do is re-build the `server` container. This works even if the container is currently running!
-
-```bash
-sudo docker compose up -d --build server
-```
-
-### #2 How to update the whitelist
+### #1 How to update the whitelist
 
 The steps to updating the whitelist are almost the same as updating the server. Instead of running `git pull`, simply edit the `whitelist.json`, and then re-build the server using the same command as above.
 
