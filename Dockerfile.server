@@ -24,5 +24,6 @@ ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
 COPY --from=build /app/server server
 COPY --from=build /app/node_modules/.prisma/client node_modules/.prisma/client
 COPY --from=build /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 ${LD_LIBRARY_PATH}/
+COPY public public
 EXPOSE 3000
 CMD ["./server"]

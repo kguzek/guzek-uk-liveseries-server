@@ -5,5 +5,5 @@ import { setCacheControl } from "@/lib/http";
 
 export const staticRouter = new Elysia().get("/favicon.ico", (ctx) => {
   setCacheControl(ctx, STATIC_CACHE_DURATION_MINS);
-  return file("src/public/favicon.ico");
+  return file("public/favicon.ico");
 });
