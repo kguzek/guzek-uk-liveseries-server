@@ -1,4 +1,4 @@
-import type { Context } from "elysia";
+import { Context, Elysia } from "elysia";
 
 import { getRequestIp, getStatusText } from "@/lib/http";
 import { getLogger } from "@/lib/logger";
@@ -11,50 +11,55 @@ const SENSITIVE_FIELDS = [
   "newPassword",
   "token",
   "accessToken",
+  "access_token",
   "refreshToken",
 ];
 
 type GenericBody = Record<string, any>;
 
-export async function logRequest({
-  request,
-  body,
-  path,
-  server,
-  query,
-}: Pick<Context, "request" | "body" | "path" | "server"> & {
-  query?: Record<string, string | undefined>;
-}) {
+async function logRequest(
+  ctx: Pick<Context, "request" | "headers" | "body" | "path" | "server"> & {
+    query?: Record<string, string | undefined>;
+  },
+) {
+  const body =
+    ctx.body && typeof ctx.body === "object" ? ({ ...ctx.body } as GenericBody) : {};
+  const query =
+    ctx.query && typeof ctx.query === "object" ? ({ ...ctx.query } as GenericBody) : {};
   // Ensure passwords are not logged in plaintext
-  if (body && typeof body === "object") {
+  if (body) {
     for (const sensitiveField of SENSITIVE_FIELDS) {
-      if (!(body as GenericBody)[sensitiveField]) continue;
-      (body as GenericBody)[sensitiveField] = "********";
+      if (!body[sensitiveField]) continue;
+      body[sensitiveField] = "********";
     }
   }
-  const ip = server?.requestIP(request);
-  // Needed to log the IP address during response
-  // response.ip = ip;
-  if (query?.token) {
-    query.token = "********";
+  if (query && typeof query === "object") {
+    for (const sensitiveField of SENSITIVE_FIELDS) {
+      if (!query[sensitiveField]) continue;
+      query[sensitiveField] = "********";
+    }
   }
+  const ip = getRequestIp(ctx);
   const searchParams = query
     ? new URLSearchParams(Object.entries(query).map(([k, v]) => [k, v || ""])).toString()
     : "";
   const queryString = searchParams.length > 0 ? `?${searchParams}` : "";
-  logger.request(`${request.method} ${path}${queryString}`, {
-    ip,
-    body,
-  });
+  logger.request(`${ctx.request.method} ${ctx.path}${queryString}`, { ip, body });
 }
 
-export async function logResponse({
-  request,
-  server,
-  set,
-}: Pick<Context, "request" | "server" | "set">) {
-  const ip = server?.requestIP(request);
-  // Needed to log the IP address during response
-  // response.ip = ip;
-  logger.response(getStatusText(set.status), { ip });
+async function logResponse(ctx: Pick<Context, "headers" | "request" | "server" | "set">) {
+  const ip = getRequestIp(ctx);
+  logger.response(getStatusText(ctx.set.status), { ip });
 }
+
+export const loggingMiddleware = (app: Elysia) =>
+  app
+    .onBeforeHandle(logRequest)
+    .onAfterResponse(logResponse)
+    .onError((ctx) => {
+      if (ctx.code === "NOT_FOUND") {
+        ctx.set.status = 404;
+        logRequest(ctx);
+        logResponse(ctx);
+      }
+    });

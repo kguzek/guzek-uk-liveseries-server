@@ -1,1 +1,10 @@
-["55d914eb-6cfb-4ddf-bc08-443d64191cfc"]
+[
+  {
+    "uuid": "8b1061a9-a170-4b8a-a9bd-af330d83ef71",
+    "role": "viewer"
+  },
+  {
+    "uuid": "c17cc350-9be9-453a-ba16-208c5b9be1fe",
+    "role": "cron"
+  }
+]

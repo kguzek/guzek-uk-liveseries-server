@@ -1,10 +1,12 @@
 import { t } from "elysia";
 
 import { EPISODE_EXAMPLE } from "./constants";
+import { getStatusText } from "./http";
 
-export const messageSchema = (example: string, ...examples: string[]) =>
+export const messageSchema = (status: number, example: string, ...examples: string[]) =>
   t.Object({
     message: t.String({ examples: [example, ...examples] }),
+    status: t.Optional(t.String({ examples: [getStatusText(status)] })),
   });
 
 export const episodeSchema = t.Object({
@@ -40,4 +42,29 @@ export const searchResultSchema = t.Object({
   files: t.Integer({ examples: [1] }),
   type: t.String({ examples: ["TV"] }),
   leechers: t.Optional(t.Integer({ examples: [217] })),
+});
+
+export const whitelistRoleSchema = t.Union([
+  t.Literal("owner"),
+  t.Literal("viewer"),
+  t.Literal("cron"),
+]);
+
+export const whitelistUserSchema = t.Object({
+  uuid: t.String({ format: "uuid" }),
+  name: t.Optional(t.String()),
+  role: whitelistRoleSchema,
+});
+
+export const whitelistSchema = t.Array(whitelistUserSchema);
+
+export const payloadUserSchema = t.Object({
+  id: t.String({ format: "uuid" }),
+  role: t.String(),
+  serverUrl: t.String(),
+});
+
+export const payloadUserResponseSchema = t.Object({
+  user: t.Union([payloadUserSchema, t.Null()]),
+  message: t.String(),
 });

@@ -2,6 +2,8 @@ import { join, resolve } from "path";
 
 export const TORRENT_NAME_PATTERN = /^(.+)(?:\.|\s|\+)S0?(\d+)E0?(\d+)/;
 
+export const DEV_MODE = process.env.NODE_ENV === "development";
+
 export const DownloadStatus = {
   STOPPED: 1,
   PENDING: 2,
@@ -57,3 +59,7 @@ export const TORRENT_DOWNLOAD_PATH = resolve(
 export const STATIC_CACHE_DURATION_MINS = 30 * 24 * 60; // 30 days in minutes
 
 export const EPISODE_EXAMPLE = "Chicago Fire S13E15";
+const CORS_ORIGINS_DEV = DEV_MODE ? ["localhost"] : [];
+export const CORS_ORIGINS = ["www.guzek.uk", "beta.guzek.uk", ...CORS_ORIGINS_DEV];
+
+export const PAYLOADCMS_URL_BASE = "https://www.guzek.uk";

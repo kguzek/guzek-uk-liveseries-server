@@ -89,8 +89,8 @@ export const torrentsRouter = new Elysia().get(
     }),
     response: {
       200: t.Union([searchResultSchema, t.Array(searchResultSchema)]),
-      404: messageSchema(NOT_FOUND_MESSAGE),
-      500: messageSchema(ERROR_SEARCHING_MESSAGE),
+      404: messageSchema(404, NOT_FOUND_MESSAGE),
+      500: messageSchema(500, ERROR_SEARCHING_MESSAGE),
     },
   },
 );

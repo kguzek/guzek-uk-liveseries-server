@@ -1,13 +1,12 @@
 import { join } from "path";
-import type { Context } from "elysia";
 import { Elysia, t } from "elysia";
 
 import type {
   ConvertedTorrentInfo,
-  Episode,
   EpisodeWithShowId,
-  TorrentInfo,
+  PayloadCmsUser,
 } from "@/lib/types";
+import { getUserFromToken } from "@/lib/auth";
 import { EPISODE_EXAMPLE, TORRENT_DOWNLOAD_PATH } from "@/lib/constants";
 import { getRequestIp } from "@/lib/http";
 import {
@@ -75,6 +74,10 @@ const RESPONSE_MESSAGES = {
     } removed.`,
 };
 
+type WebsocketStore = {
+  user: PayloadCmsUser | null;
+};
+
 export const downloadedEpisodesRouter = new Elysia({
   prefix: "/liveseries/downloaded-episodes",
 })
@@ -100,7 +103,7 @@ export const downloadedEpisodesRouter = new Elysia({
             ...episodeSchemaWithId.properties,
           }),
         ),
-        500: messageSchema(RESPONSE_MESSAGES.getAllEpisodesError),
+        500: messageSchema(500, RESPONSE_MESSAGES.getAllEpisodesError),
       },
     },
   )
@@ -143,8 +146,11 @@ export const downloadedEpisodesRouter = new Elysia({
       body: episodeSchemaWithId,
       response: {
         200: convertedTorrentInfoSchema,
-        409: messageSchema(RESPONSE_MESSAGES.episodeAlreadyDownloaded(EPISODE_EXAMPLE)),
-        400: messageSchema(RESPONSE_MESSAGES.invalidEpisode(EPISODE_EXAMPLE)),
+        409: messageSchema(
+          409,
+          RESPONSE_MESSAGES.episodeAlreadyDownloaded(EPISODE_EXAMPLE),
+        ),
+        400: messageSchema(400, RESPONSE_MESSAGES.invalidEpisode(EPISODE_EXAMPLE)),
       },
     },
   )
@@ -210,9 +216,10 @@ export const downloadedEpisodesRouter = new Elysia({
     {
       params: episodeSchema,
       response: {
-        200: messageSchema(RESPONSE_MESSAGES.deletionSuccess),
-        404: messageSchema(RESPONSE_MESSAGES.episodeNotFound),
+        200: messageSchema(200, RESPONSE_MESSAGES.deletionSuccess),
+        404: messageSchema(404, RESPONSE_MESSAGES.episodeNotFound),
         500: messageSchema(
+          500,
           RESPONSE_MESSAGES.deletionErrorDatabase,
           RESPONSE_MESSAGES.deletionErrorTorrent,
           RESPONSE_MESSAGES.deletionErrorFiles(true),
@@ -239,21 +246,42 @@ export const downloadedEpisodesRouter = new Elysia({
     error(ctx) {
       logger.error(`Websocket error with ${getRequestIp(ctx)}`);
     },
-    message(ws, message: { type: string; data: ConvertedTorrentInfo[] }) {
+    body: t.Union([
+      t.Object({
+        type: t.Literal("poll"),
+        data: t.Optional(t.Array(convertedTorrentInfoSchema)),
+      }),
+      t.Object({
+        type: t.Literal("authenticate"),
+        token: t.String(),
+      }),
+    ]),
+    async message(ws, message) {
       switch (message.type) {
+        case "authenticate":
+          const result = await getUserFromToken(message.token);
+          (ws.data.store as WebsocketStore).user = result;
+          ws.send({ authenticated: result != null });
+          break;
         case "poll":
-          torrentClient
-            .getAllTorrentInfos()
-            .then((data) => {
-              ws.send({ data });
-            })
-            .catch((error) => {
-              logger.error("Error while performing websocket action:", error);
-              ws.send({ data: [] });
+          if ((ws.data.store as WebsocketStore).user == null) {
+            ws.send({
+              data: [],
+              error: "This websocket connection requires authentication.",
             });
+            ws.close();
+            return;
+          }
+          try {
+            const data = await torrentClient.getAllTorrentInfos();
+            ws.send({ data, error: null });
+          } catch (error) {
+            logger.error("Error while performing websocket action:", error);
+            ws.send({ data: [], error: "Could not get torrent info" });
+          }
           break;
         default:
-          const error = `Unknown message type '${message.type}'.`;
+          const error = `Unknown message type '${message}'.`;
           logger.warn(error);
           ws.send({ error });
           return;

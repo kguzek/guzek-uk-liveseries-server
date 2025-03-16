@@ -26,10 +26,12 @@
     "README.md"
   ],
   "dependencies": {
+    "@elysiajs/cors": "^1.2.0",
     "@elysiajs/swagger": "^1.2.2",
     "@prisma/client": "^6.5.0",
     "axios": "^1.8.2",
     "elysia": "latest",
+    "elysia-rate-limit": "^4.2.1",
     "node-html-parser": "^7.0.1",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
