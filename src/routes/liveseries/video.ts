@@ -30,8 +30,8 @@ export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
       allow_non_mp4: t.Optional(t.Boolean()),
     }),
     response: {
-      500: messageSchema(ERROR_MESSAGES.directoryAccessError),
-      404: messageSchema(ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE)),
+      500: messageSchema(500, ERROR_MESSAGES.directoryAccessError),
+      404: messageSchema(404, ERROR_MESSAGES.episodeNotFound(EPISODE_EXAMPLE)),
       200: t.File(),
     },
   },

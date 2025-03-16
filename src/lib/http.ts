@@ -5,10 +5,14 @@ import { STATUS_CODES } from "./constants";
 
 /** Extracts the request's originating IP address, taking into account proxies. */
 export function getRequestIp(ctx: Pick<Context, "headers" | "server" | "request">) {
-  const ip = ctx.headers["cf-connecting-ip"] || ctx.headers["x-forwarded-for"];
-  if (!ip) return ctx.server?.requestIP(ctx.request)?.address;
-  if (Array.isArray(ip)) return ip[0];
-  return ip.split(",")[0].trim();
+  const ipHeader =
+    "headers" in ctx
+      ? ctx.headers["cf-connecting-ip"] || ctx.headers["x-forwarded-for"]
+      : null;
+  if (!ipHeader)
+    return ctx.server?.requestIP(ctx.request)?.address.replace(/^::ffff:/, "");
+  if (Array.isArray(ipHeader)) return ipHeader[0];
+  return ipHeader.split(",")[0].trim();
 }
 
 /** Returns the code followed by the status code name according to RFC2616 § 10 */

@@ -44,8 +44,9 @@ export const subtitlesRouter = new Elysia({ prefix: "/liveseries/subtitles" }).g
     params: episodeSchema,
     response: {
       200: t.File(),
-      404: messageSchema(ERROR_MESSAGES.subtitlesNotFound),
+      404: messageSchema(404, ERROR_MESSAGES.subtitlesNotFound),
       500: messageSchema(
+        500,
         ERROR_MESSAGES.subtitleClientNotConfigured,
         ERROR_MESSAGES.subtitleServiceBadResponse,
         ERROR_MESSAGES.subtitlesMalformatted,
@@ -54,7 +55,7 @@ export const subtitlesRouter = new Elysia({ prefix: "/liveseries/subtitles" }).g
         ERROR_MESSAGES.subtitleServiceDownloadError2,
         ERROR_MESSAGES.directoryAccessError,
       ),
-      503: messageSchema(ERROR_MESSAGES.subtitleServiceNotReachable),
+      503: messageSchema(503, ERROR_MESSAGES.subtitleServiceNotReachable),
     },
   },
 );

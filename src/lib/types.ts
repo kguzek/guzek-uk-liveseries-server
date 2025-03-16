@@ -9,7 +9,11 @@ import type {
   convertedTorrentInfoSchema,
   episodeSchema,
   episodeSchemaWithId,
+  payloadUserSchema,
   searchResultSchema,
+  whitelistRoleSchema,
+  whitelistSchema,
+  whitelistUserSchema,
 } from "./schemas";
 
 export type RequestMethod = "GET" | "PUT" | "POST" | "DELETE" | "PATCH";
@@ -35,3 +39,7 @@ export type Episode = Static<typeof episodeSchema>;
 export type EpisodeWithShowId = Static<typeof episodeSchemaWithId>;
 export type ConvertedTorrentInfo = Static<typeof convertedTorrentInfoSchema>;
 export type SearchResult = Static<typeof searchResultSchema>;
+export type WhitelistRole = Static<typeof whitelistRoleSchema>;
+export type WhitelistUser = Static<typeof whitelistUserSchema>;
+export type Whitelist = Static<typeof whitelistSchema>;
+export type PayloadCmsUser = Static<typeof payloadUserSchema>;

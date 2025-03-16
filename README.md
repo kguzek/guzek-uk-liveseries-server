@@ -64,10 +64,16 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
    Add your UUID to the array. The UUID that is there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Cron User UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
 
    ```json
-   [
-     "55d914eb-6cfb-4ddf-bc08-443d64191cfc",
-     "a5260d6a-7275-4d86-bcd7-fd5372827ff5"
-   ]
+    [
+      {
+        "uuid": "55d914eb-6cfb-4ddf-bc08-443d64191cfc",
+        "role": "viewer"
+      },
+      {
+        "uuid": "c17cc350-9be9-453a-ba16-208c5b9be1fe",
+        "role": "cron"
+      }
+    ]
    ```
 
 5. Run the application!
@@ -196,7 +202,7 @@ The steps to updating the whitelist are almost the same as updating the server. 
 The central Guzek UK API has a CRON job set up to check each user's unwatched episodes every six hours, so there is no recurring task on this self-hosted server. If you wish to use this feature, simply add the CRON user UUID to your whitelist, too:
 
 ```text
-a5260d6a-7275-4d86-bcd7-fd5372827ff5
+c17cc350-9be9-453a-ba16-208c5b9be1fe
 ```
 
 That way the central server will be able to communicate with your server and download episodes you haven't watched yet.
