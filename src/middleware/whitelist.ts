@@ -16,7 +16,7 @@ const ALLOW_GET_REQUESTS =
 const PUBLIC_PATHS = ["/health", "/favicon.ico"];
 
 function isWhitelisted(user: UserObj) {
-  return whitelist.includes(user.uuid);
+  return (whitelist as string[]).includes(user.uuid);
 }
 
 export function getWhitelistMiddleware(debugMode: boolean) {
