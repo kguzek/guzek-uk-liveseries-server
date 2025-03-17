@@ -230,6 +230,7 @@ There are three permission levels for the whitelist:
 - owner -- this gives the user full access to the server, including viewing, streaming, downloading and deleting episodes as well as searching for torrents via `/torrents/`
 - viewer -- this only gives access to listing the downloaded files and torrent progress, streaming downloaded episodes and downloading video subtitles, but nothing else
 - cron -- this only gives access to downloading new episodes, without viewing, streaming, deleting or anything else
+- uploader -- this gives access to both viewer and cron permissions (i.e. streaming & downloading without deleting)
 
 You can have as many users as you like in each category. To give a user a given permission, set their `role` attribute in the `whitelist.json` file to the appropriate permission level.
 

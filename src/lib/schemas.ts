@@ -46,6 +46,7 @@ export const searchResultSchema = t.Object({
 
 export const whitelistRoleSchema = t.Union([
   t.Literal("owner"),
+  t.Literal("uploader"),
   t.Literal("viewer"),
   t.Literal("cron"),
 ]);

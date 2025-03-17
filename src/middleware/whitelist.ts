@@ -14,24 +14,31 @@ import { getLogger } from "@/lib/logger";
 const logger = getLogger(__filename);
 
 type PermissionCategory = Exclude<WhitelistRole, "owner"> | "public";
+type PermissionsRecord = Partial<Record<RequestMethod, string[]>>;
 
-const PERMISSIONS: Record<
-  PermissionCategory,
-  Partial<Record<RequestMethod, string[]>>
-> = {
+const VIEWER_PERMISSIONS: PermissionsRecord = {
+  GET: [
+    "/liveseries/video",
+    "/liveseries/subtitles",
+    // "/liveseries/downloaded-episodes", // not needed for frontend, useful for debugging
+  ],
+};
+
+const CRON_PERMISSIONS: PermissionsRecord = {
+  POST: ["/liveseries/downloaded-episodes"],
+};
+
+const PERMISSIONS: Record<PermissionCategory, PermissionsRecord> = {
   public: {
     GET: ["/favicon.ico", "/health", "/swagger", "/liveseries/downloaded-episodes/ws"],
+    OPTIONS: ["/liveseries/downloaded-episodes"],
   },
-  viewer: {
-    GET: [
-      "/liveseries/video",
-      "/liveseries/subtitles",
-      // "/liveseries/downloaded-episodes", // not needed for frontend, useful for debugging
-    ],
+  viewer: VIEWER_PERMISSIONS,
+  uploader: {
+    ...VIEWER_PERMISSIONS,
+    ...CRON_PERMISSIONS,
   },
-  cron: {
-    POST: ["/liveseries/downloaded-episodes"],
-  },
+  cron: CRON_PERMISSIONS,
 };
 
 export const whitelistMiddleware = (app: Elysia) =>

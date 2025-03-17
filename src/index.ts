@@ -72,7 +72,9 @@ async function init() {
     .onStop(() => {
       logger.http("🦊 Stopping the server...");
     })
-    .use(cors({ origin: CORS_ORIGINS }))
+    .use(
+      cors({ origin: CORS_ORIGINS, allowedHeaders: ["Content-Type", "Authorization"] }),
+    )
     .use(
       rateLimit({
         errorResponse: new Response(

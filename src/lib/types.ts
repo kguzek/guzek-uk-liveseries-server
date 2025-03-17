@@ -16,7 +16,7 @@ import type {
   whitelistUserSchema,
 } from "./schemas";
 
-export type RequestMethod = "GET" | "PUT" | "POST" | "DELETE" | "PATCH";
+export type RequestMethod = "GET" | "PUT" | "POST" | "DELETE" | "PATCH" | "OPTIONS";
 
 export type SuccessStatusCode = keyof typeof SUCCESS_STATUS_CODES;
 export type ClientErrorStatusCode = keyof typeof CLIENT_ERROR_STATUS_CODES;
