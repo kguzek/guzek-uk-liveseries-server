@@ -6,7 +6,7 @@ if [ ! -d "$LOG_DIRECTORY" ]; then
 fi
 LOG_FILE="$LOG_DIRECTORY/script-done.log"
 if [ ! -f "$LOG_FILE" ]; then
-  touch "$LOG_FILE"
+  touch "$LOG_FILE" || echo "Failed to create log file as $(whoami)"
 fi
 VIDEO_PATTERN='\.(mkv|avi)$'
 
@@ -16,12 +16,12 @@ else
   FILE="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
 fi
 
-function log {
+log() {
   echo "$1"
-  echo "$(date +'%F @ %T'): $1" >>"$LOG_FILE"
+  echo "$(date +'%F @ %T'): $1" >>"$LOG_FILE" || echo "Failed to write to log file as $(whoami)"
 }
 
-function convert {
+convert() {
   log "Checking file '$1'"
   if [[ $1 =~ \.mp4$ ]]; then
     log "File is already in MP4 format"
@@ -36,11 +36,14 @@ function convert {
   # ensures better video compatibility with some devices (like mobile browsers),
   # converts the audio streams into stereo (with an appropriate bitrate and sample rate) to ensure music isn't separated from dialogue tracks,
   # and adds the moov atom at the beginning of the file for faster streaming.
-  ffmpeg -hide_banner -loglevel warning -i "$1" \
+  if ffmpeg -hide_banner -loglevel warning -i "$1" \
     -c:v libx264 -profile:v main -pix_fmt yuv420p -level 4.0 -preset medium -crf 23 \
     -c:a aac -profile:a aac_low -b:a 128k -ac 2 -ar 44100 \
-    -movflags +faststart "$1.mp4" &&
-    log "File conversion completed successfully" || log "Non-zero exit code while running ffmpeg"
+    -movflags +faststart "$1.mp4"; then
+    log "File conversion completed successfully"
+  else
+    log "Non-zero exit code while running ffmpeg"
+  fi
 }
 
 log "File '$FILE' has finished downloading"
