@@ -22,6 +22,9 @@ You can choose to subscribe to automatic downloads, or manually select episodes 
 
 The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compose.
 
+> [!TIP]
+> Instead of cloning the entire repository, you can just download the `compose.yaml`, `.env.template` and `whitelist.template.json` files. The docker images are hosted on the Docker Hub, meaning you don't need to download the source code to run the application.
+
 1. Ensure you have Docker Compose installed on your system. The Docker website contains [very informative documentation](https://docs.docker.com/compose/install/) on how to do this, if you haven't already. You can check if it's installed via the terminal:
 
    ```bash
@@ -61,12 +64,12 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
    cp whitelist{.template,}.json
    ```
 
-   Add your UUID to the array. The UUID that is there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Cron User UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
+   Add your UUID to the array. The UUIDs that are there by default is safe to remove. If you wish to opt-in to automatic torrent downloads by a central CRON job, this file is where you must add the [Cron User UUID](#automatic-unwatched-episodes-checking). Below is what your `whitelist.json` file might look like:
 
    ```json
     [
       {
-        "uuid": "55d914eb-6cfb-4ddf-bc08-443d64191cfc",
+        "uuid": "8b1061a9-a170-4b8a-a9bd-af330d83ef71",
         "role": "viewer"
       },
       {
@@ -75,6 +78,8 @@ The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compo
       }
     ]
    ```
+
+   Refer to the FAQ for [more information about the whitelist](#3-what-are-the-available-whitelist-settings).
 
 5. Run the application!
 
@@ -191,15 +196,53 @@ The manual installation involves more steps than the docker compose method, but 
 
 ## FAQ
 
-### #1 How to update the whitelist
+### #1 How to update the server
 
-The steps to updating the whitelist are almost the same as updating the server. Instead of running `git pull`, simply edit the `whitelist.json`, and then re-build the server using the same command as above.
+Installation via docker compose makes this step very hassle-free. All you have to do is navigate to the location of your `compose.yaml` file and update the images.
+
+```bash
+docker compose pull
+```
+
+Then, simply re-build the container.
+
+```bash
+docker compose up -d --build server
+```
+
+That's all!
+
+### #2 How to update the whitelist
+
+The whitelist file is automatically re-read at an interval of 10 minutes. Once you edit it, it will automatically be applied no later than after 10 minutes. If you need it to be applied instantly, you can restart the container since it is additionally always read at server initialisation.
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+You do not need to re-build the container for this.
+
+### #3 What are the available whitelist settings?
+
+There are three permission levels for the whitelist:
+
+- owner -- this gives the user full access to the server, including viewing, streaming, downloading and deleting episodes as well as searching for torrents via `/torrents/`
+- viewer -- this only gives access to listing the downloaded files and torrent progress, streaming downloaded episodes and downloading video subtitles, but nothing else
+- cron -- this only gives access to downloading new episodes, without viewing, streaming, deleting or anything else
+
+You can have as many users as you like in each category. To give a user a given permission, set their `role` attribute in the `whitelist.json` file to the appropriate permission level.
+
+The default `whitelist.json` file adds a made-up UUID as owner, my personal account as a viewer, and the official CRON user as a cron. A typical installation might involve changing the fake UUID to your UUID, and removing the viewer entry for my account. You can keep the CRON user entry if you wish to enable the [automatic unwatched episodes check](#automatic-unwatched-episodes-checking).
+
+For those interested, the permission rules are hard-coded in the [whitelist middleware file](src/middleware/whitelist.ts#17).
+You may notice that the websocket endpoint is listed as public, but the websocket connection in fact requires additional authentication through message frames, allowing only owners or viewers to retrieve information about downloaded episodes and torrent progress.
 
 ## Other features
 
 ### Automatic unwatched episodes checking
 
-The central Guzek UK API has a CRON job set up to check each user's unwatched episodes every six hours, so there is no recurring task on this self-hosted server. If you wish to use this feature, simply add the CRON user UUID to your whitelist, too:
+The central Guzek UK API has a CRON job set up to check each user's unwatched episodes every six hours, so there is no recurring task on this self-hosted server. If you wish to use this feature, simply add the official CRON user UUID to your whitelist, too:
 
 ```text
 c17cc350-9be9-453a-ba16-208c5b9be1fe
@@ -207,12 +250,14 @@ c17cc350-9be9-453a-ba16-208c5b9be1fe
 
 That way the central server will be able to communicate with your server and download episodes you haven't watched yet.
 
+If there are multiple users using the same LiveSeries server with the same unwatched episodes, the CRON job will send requests for each of them, but only the first one will trigger a new download. Every new download is saved to the database, so subsequent attempts to download the same episode will simply be silently ignored.
+
 ### Torrent scraper
 
 This server installation features a customisable torrent scraper, accessible as a REST API.
 
 ```bash
-curl localhost:5017/liveseries/torrents/[show-name]/[season]/[episode]
+curl localhost:5017/torrents/[show-name]/[season]/[episode]
 ```
 
 Available query parameters:
@@ -224,7 +269,7 @@ Available query parameters:
 Example:
 
 ```bash
-curl localhost:5021/liveseries/torrents/[show-name]/[season]/[episode]?sort_by=size&sort_direction=ascending
+curl localhost:5017/torrents/[show-name]/[season]/[episode]?sort_by=size&sort_direction=ascending
 ```
 
 For more information on available routes, refer to the next section.

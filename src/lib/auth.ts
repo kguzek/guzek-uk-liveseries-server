@@ -58,3 +58,8 @@ export async function getUserFromToken(token?: string): Promise<PayloadCmsUser |
     return null;
   }
 }
+
+export const findWhitelistedUser = (user?: PayloadCmsUser | null) =>
+  user &&
+  whitelistMetadata.whitelist &&
+  whitelistMetadata.whitelist.find((item) => item.uuid === user.id);

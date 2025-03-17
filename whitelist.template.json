@@ -1,5 +1,9 @@
 [
   {
+    "uuid": "3sd938e1-some-fake-uuid-64sd78d31ao9",
+    "role": "owner"
+  },
+  {
     "uuid": "8b1061a9-a170-4b8a-a9bd-af330d83ef71",
     "role": "viewer"
   },

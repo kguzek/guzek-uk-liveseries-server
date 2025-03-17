@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 
 import type { RequestMethod, WhitelistRole } from "@/lib/types";
 import {
+  findWhitelistedUser,
   getUserFromToken,
   isWhitelistStale,
   readWhitelistFile,
@@ -78,9 +79,7 @@ export const whitelistMiddleware = (app: Elysia) =>
       if (!user) {
         return reject(401, "This route requires authentication.");
       }
-      const whitelistItem = whitelistMetadata.whitelist.find(
-        (item) => item.uuid === user.id,
-      );
+      const whitelistItem = findWhitelistedUser(user);
       const allowed =
         whitelistItem == null
           ? false

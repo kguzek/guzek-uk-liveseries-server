@@ -6,7 +6,7 @@ import type {
   EpisodeWithShowId,
   PayloadCmsUser,
 } from "@/lib/types";
-import { getUserFromToken } from "@/lib/auth";
+import { findWhitelistedUser, getUserFromToken } from "@/lib/auth";
 import { EPISODE_EXAMPLE, TORRENT_DOWNLOAD_PATH } from "@/lib/constants";
 import { getRequestIp } from "@/lib/http";
 import {
@@ -261,7 +261,10 @@ export const downloadedEpisodesRouter = new Elysia({
         case "authenticate":
           const result = await getUserFromToken(message.token);
           (ws.data.store as WebsocketStore).user = result;
-          ws.send({ type: "authenticated", success: result != null });
+          const whitelistedUser = findWhitelistedUser(result);
+          const success =
+            whitelistedUser != null && ["owner", "viewer"].includes(whitelistedUser.role);
+          ws.send({ type: "authenticated", success });
           break;
         case "poll":
           if ((ws.data.store as WebsocketStore).user == null) {
