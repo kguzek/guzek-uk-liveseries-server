@@ -233,7 +233,7 @@ export const downloadedEpisodesRouter = new Elysia({
       if (!torrentClient) {
         const error = "Websocket connection established without active torrent client.";
         logger.error(error);
-        ws.send({ error });
+        ws.send({ type: "error", error });
         ws.close();
         return;
       }
@@ -261,12 +261,12 @@ export const downloadedEpisodesRouter = new Elysia({
         case "authenticate":
           const result = await getUserFromToken(message.token);
           (ws.data.store as WebsocketStore).user = result;
-          ws.send({ authenticated: result != null });
+          ws.send({ type: "authenticated", success: result != null });
           break;
         case "poll":
           if ((ws.data.store as WebsocketStore).user == null) {
             ws.send({
-              data: [],
+              type: "error",
               error: "This websocket connection requires authentication.",
             });
             ws.close();
@@ -274,16 +274,16 @@ export const downloadedEpisodesRouter = new Elysia({
           }
           try {
             const data = await torrentClient.getAllTorrentInfos();
-            ws.send({ data, error: null });
+            ws.send({ type: "polled", data });
           } catch (error) {
             logger.error("Error while performing websocket action:", error);
-            ws.send({ data: [], error: "Could not get torrent info" });
+            ws.send({ type: "error", error: "Could not get torrent info" });
           }
           break;
         default:
           const error = `Unknown message type '${message}'.`;
           logger.warn(error);
-          ws.send({ error });
+          ws.send({ type: "error", error });
           return;
       }
     },
