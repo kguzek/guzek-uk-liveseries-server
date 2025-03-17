@@ -4,7 +4,7 @@ import { Elysia, t } from "elysia";
 import { STATIC_CACHE_DURATION_MINS } from "@/lib/constants";
 import { setCacheControl } from "@/lib/http";
 import { parseEpisodeRequest } from "@/lib/liveseries";
-import { episodeSchema, messageSchema } from "@/lib/schemas";
+import { accessTokenSchema, episodeSchema, messageSchema } from "@/lib/schemas";
 import {
   downloadSubtitles,
   ERROR_MESSAGES,
@@ -42,6 +42,7 @@ export const subtitlesRouter = new Elysia({ prefix: "/liveseries/subtitles" }).g
   },
   {
     params: episodeSchema,
+    query: accessTokenSchema,
     response: {
       200: t.File(),
       404: messageSchema(404, ERROR_MESSAGES.subtitlesNotFound),

@@ -7,7 +7,7 @@ import {
   parseEpisodeRequest,
   searchForDownloadedEpisode,
 } from "@/lib/liveseries";
-import { episodeSchema, messageSchema } from "@/lib/schemas";
+import { accessTokenSchema, episodeSchema, messageSchema } from "@/lib/schemas";
 
 export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
   "/:showName/:season/:episode",
@@ -28,6 +28,7 @@ export const videoRouter = new Elysia({ prefix: "/liveseries/video" }).get(
     params: episodeSchema,
     query: t.Object({
       allow_non_mp4: t.Optional(t.Boolean()),
+      ...accessTokenSchema.properties,
     }),
     response: {
       500: messageSchema(500, ERROR_MESSAGES.directoryAccessError),

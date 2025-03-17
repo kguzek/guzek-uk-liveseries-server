@@ -69,3 +69,7 @@ export const payloadUserResponseSchema = t.Object({
   user: t.Union([payloadUserSchema, t.Null()]),
   message: t.String(),
 });
+
+export const accessTokenSchema = t.Object({
+  access_token: t.Optional(t.String()),
+});
