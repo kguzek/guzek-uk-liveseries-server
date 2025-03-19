@@ -17,8 +17,6 @@ RUN /root/.bun/bin/bun run build
 
 FROM gcr.io/distroless/cc
 WORKDIR /app
-# Fails the deployment if they are not present
-COPY whitelist.json .env ./
 ENV NODE_ENV=production
 ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
 COPY --from=build /app/server server

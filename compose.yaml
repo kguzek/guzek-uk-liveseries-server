@@ -74,6 +74,7 @@ services:
       - SUBTITLE_CACHE_PATH=/subtitles
     volumes:
       - ./whitelist.json:/app/whitelist.json
+      - ./.env:/app/.env
       - ${TR_DOWNLOAD_PATH}:/downloads
       - ${SUBTITLE_CACHE_PATH}:/subtitles
     ports:
