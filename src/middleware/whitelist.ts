@@ -41,8 +41,26 @@ const PERMISSIONS: Record<PermissionCategory, PermissionsRecord> = {
   cron: CRON_PERMISSIONS,
 };
 
-export const whitelistMiddleware = (app: Elysia) =>
-  app
+export const whitelistMiddleware = (app: Elysia) => {
+  const WHITELIST_DISABLED = process.env.DANGEROUSLY_DISABLE_WHITELIST === "true";
+  if (WHITELIST_DISABLED) {
+    logger.warn("Whitelist is disabled. This setting should not be used in production!");
+  }
+  const AUTHENTICATION_DISABLED =
+    process.env.DANGEROUSLY_DISABLE_AUTHENTICATION === "true";
+  if (AUTHENTICATION_DISABLED) {
+    logger.warn(
+      "Authentication is disabled. This setting should not be used in production!",
+    );
+  }
+  const GET_BYPASS_ENABLED = process.env.ALLOW_UNAUTHENTICATED_GET_REQUESTS === "true";
+  if (GET_BYPASS_ENABLED) {
+    logger.warn(
+      "Unauthenticated GET requests are allowed. This may lead to network overuse!",
+    );
+  }
+
+  return app
     .derive({ as: "scoped" }, async (ctx) => {
       const token =
         ctx.headers["authorization"]?.match(/^Bearer (.+)$/)?.at(1) ||
@@ -66,6 +84,10 @@ export const whitelistMiddleware = (app: Elysia) =>
         if (isAllowed("public")) {
           return;
         }
+        if (method === "GET" && GET_BYPASS_ENABLED) {
+          logger.verbose("Bypassing rejection for unauthorized GET request");
+          return;
+        }
         ctx.set.status = status;
         logger.http(`Rejecting ${method} ${ctx.path} with status ${status}`);
         return { message, status: getStatusText(status) };
@@ -83,15 +105,16 @@ export const whitelistMiddleware = (app: Elysia) =>
       }
 
       const user = ctx.user;
-      if (!user) {
+      if (!user && !AUTHENTICATION_DISABLED) {
         return reject(401, "This route requires authentication.");
       }
       const whitelistItem = findWhitelistedUser(user);
       const allowed =
         whitelistItem == null
-          ? false
+          ? !WHITELIST_DISABLED
           : whitelistItem.role === "owner" || isAllowed(whitelistItem.role);
-      if (!allowed) {
+      if (!allowed && !AUTHENTICATION_DISABLED) {
         return reject(403, "You are not authorized to access this resource");
       }
     });
+};
