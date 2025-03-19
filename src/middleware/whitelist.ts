@@ -18,6 +18,7 @@ type PermissionsRecord = Partial<Record<RequestMethod, string[]>>;
 
 const VIEWER_PERMISSIONS: PermissionsRecord = {
   GET: [
+    "/liveseries/stat",
     "/liveseries/video",
     "/liveseries/subtitles",
     // "/liveseries/downloaded-episodes", // not needed for frontend, useful for debugging
