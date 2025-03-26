@@ -1,0 +1,24 @@
+name: (CD) Deploy to Registry
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - name: Login to container registry
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ vars.REGISTRY_HOSTNAME }}
+        username: ${{ secrets.HARBOR_USERNAME }}
+        password: ${{ secrets.HARBOR_PASSWORD }}
+
+    - name: Checkout repository code
+      uses: actions/checkout@v3
+  
+    - name: Run deploy script
+      run: ./deploy.sh
