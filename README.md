@@ -23,7 +23,7 @@ You can choose to subscribe to automatic downloads, or manually select episodes 
 The recommended way to use the Guzek UK LiveSeries Server is to use Docker Compose.
 
 > [!TIP]
-> Instead of cloning the entire repository, you can just download the `compose.yaml`, `.env.template` and `whitelist.template.json` files. The docker images are hosted on the Docker Hub, meaning you don't need to download the source code to run the application.
+> Instead of cloning the entire repository, you can just download the `compose.yaml`, `.env.template` and `whitelist.template.json` files. The docker images are hosted on [my container registry](https://registry.guzek.uk), meaning you don't need to download the source code to run the application.
 
 1. Ensure you have Docker Compose installed on your system. The Docker website contains [very informative documentation](https://docs.docker.com/compose/install/) on how to do this, if you haven't already. You can check if it's installed via the terminal:
 

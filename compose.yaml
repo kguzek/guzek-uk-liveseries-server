@@ -16,7 +16,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   transmission:
-    image: liveseries/transmission
+    image: registry.guzek.uk/liveseries/transmission
     container_name: transmission
     restart: always
     environment:
@@ -47,7 +47,7 @@ services:
       timeout: 10s
       retries: 3
   migrations:
-    image: liveseries/migrations
+    image: registry.guzek.uk/liveseries/migrations
     container_name: migrations
     restart: no
     depends_on:
@@ -56,7 +56,7 @@ services:
     environment:
       - DATABASE_URL=postgres://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME}
   server:
-    image: liveseries/server
+    image: registry.guzek.uk/liveseries/server
     container_name: liveseries
     restart: always
     depends_on:

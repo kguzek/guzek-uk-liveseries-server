@@ -42,15 +42,20 @@ async function downloadEpisode(
   }
 
   const createEntry = () => prisma.downloadedEpisode.create({ data });
-  let torrentInfo: ConvertedTorrentInfo | null;
+  let torrentInfo: ConvertedTorrentInfo | boolean;
   try {
-    torrentInfo = await torrentClient.addTorrent(result.link, createEntry);
-  } catch {
-    logger.error("The torrent client is unavailable");
+    torrentInfo = await torrentClient.addTorrent(result.link);
+  } catch (error) {
+    logger.error("The torrent client is unavailable:", error);
     return null;
   }
   if (!torrentInfo) {
     logger.error(`Adding the torrent to the client failed.`);
+    return null;
+  }
+  if (torrentInfo === true) {
+    logger.info("Duplicate file; no torrents added. Creating database entry.");
+    await createEntry();
     return null;
   }
   await createEntry();

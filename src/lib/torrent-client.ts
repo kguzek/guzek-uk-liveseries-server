@@ -174,14 +174,15 @@ export class TorrentClient {
     });
   }
 
-  async addTorrent(link: string, createEntry?: () => Promise<unknown>) {
+  /** @returns torrent info if created successfully, `false` if an error occurred, `true` if the torrent was already downloaded. */
+  async addTorrent(link: string): Promise<ConvertedTorrentInfo | boolean> {
     const resFreeSpace = await this.fetch("free-space", {
       path: TORRENT_DOWNLOAD_PATH,
     });
     const freeBytes = resFreeSpace.arguments["size-bytes"];
     if (!freeBytes) {
       logger.error("Invalid free space response", Object.keys(resFreeSpace));
-      return null;
+      return false;
     }
     if (freeBytes < 0) {
       logger.error(
@@ -190,14 +191,14 @@ export class TorrentClient {
         }`,
         resFreeSpace,
       );
-      return null;
+      return false;
     }
     const freeKebiBytes = Math.floor(freeBytes / 1024);
     if (freeKebiBytes < MIN_REQUIRED_KEBIBYTES) {
       logger.error(
         `Not enough free space to download torrent. Free space: ${freeKebiBytes} KiB`,
       );
-      return null;
+      return false;
     }
 
     const resTorrentAdd = await this.fetch("torrent-add", {
@@ -208,11 +209,7 @@ export class TorrentClient {
     });
     const torrent = resTorrentAdd.arguments["torrent-added"];
     if (!torrent) {
-      logger.info("Duplicate file; no torrents added. Creating database entry.");
-      if (createEntry) {
-        await createEntry();
-      }
-      return null;
+      return true;
     }
     this.numTorrents++;
     return convertTorrentInfo(torrent);

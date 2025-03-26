@@ -4,7 +4,7 @@ NAMESPACE='liveseries'
 
 for dockerfile in ./Dockerfile.*; do
   repository=${dockerfile#./Dockerfile.}
-  tag="$NAMESPACE/$repository:latest"
+  tag="registry.guzek.uk/$NAMESPACE/$repository:latest"
   # DOCKER_TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$NAMESPACE/$repository:pull" | jq -r '.token')
   # REMOTE_MANIFEST=$(curl -sH "Authorization: Bearer $DOCKER_TOKEN" "https://registry.hub.docker.com/v2/$NAMESPACE/$repository/manifests/latest" | jq -r .layers[0].digest)
   # LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$tag" | cut -d '@' -f 2)
@@ -16,7 +16,7 @@ for dockerfile in ./Dockerfile.*; do
   cached_steps=$(echo "$build_output" | grep -c "CACHED")
 
   echo -n "$cached_steps/$total_steps build steps were cached. "
-  if [[ "$cached_steps" -lt "$total_steps" ]]; then
+  if [[ "$cached_steps" -lt "$total_steps" || $1 = "--force" ]]; then
     echo "Pushing image..."
     docker push "$tag"
   else
