@@ -2,7 +2,12 @@ import Elysia, { t } from "elysia";
 
 import type { Episode, SearchResult } from "@/lib/types";
 import { getLogger } from "@/lib/logger";
-import { episodeSchema, messageSchema, searchResultSchema } from "@/lib/schemas";
+import {
+  accessTokenSchema,
+  episodeSchema,
+  messageSchema,
+  searchResultSchema,
+} from "@/lib/schemas";
 import { TorrentIndexer } from "@/torrent-indexers";
 import { Eztv } from "@/torrent-indexers/eztv";
 
@@ -86,6 +91,7 @@ export const torrentsRouter = new Elysia().get(
           t.Literal("descending"),
         ]),
       ),
+      ...accessTokenSchema.properties,
     }),
     response: {
       200: t.Union([searchResultSchema, t.Array(searchResultSchema)]),
