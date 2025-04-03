@@ -60,6 +60,18 @@ export const STATIC_CACHE_DURATION_MINS = 30 * 24 * 60; // 30 days in minutes
 
 export const EPISODE_EXAMPLE = "Chicago Fire S13E15";
 const CORS_ORIGINS_DEV = DEV_MODE ? ["localhost"] : [];
-export const CORS_ORIGINS = ["www.guzek.uk", "beta.guzek.uk", ...CORS_ORIGINS_DEV];
+const ADDITIONAL_CORS_ORIGINS = process.env.CORS_ORIGINS?.split(",") ?? [];
+export const CORS_ORIGINS = [
+  "www.guzek.uk",
+  "beta.guzek.uk",
+  ...CORS_ORIGINS_DEV,
+  ...ADDITIONAL_CORS_ORIGINS,
+].reduce<string[]>((acc, origin) => {
+  const trimmed = origin.trim();
+  if (trimmed) {
+    acc.push(trimmed);
+  }
+  return acc;
+}, []);
 
 export const PAYLOADCMS_URL_BASE = "https://www.guzek.uk";
