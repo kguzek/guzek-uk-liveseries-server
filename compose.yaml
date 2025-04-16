@@ -26,8 +26,6 @@ services:
       - TZ=Etc/UTC
       - USER=${TR_USER}
       - PASS=${TR_PASSWORD}
-      - TRANSMISSION_SCRIPT_TORRENT_DONE_ENABLED=true
-      - TRANSMISSION_SCRIPT_TORRENT_DONE_FILENAME=/convert-to-mp4.sh
       - TRANSMISSION_PEER_PORT=49917
       - TR_DOWNLOAD_PATH=/downloads
       - TR_CONFIG_PATH=/config
