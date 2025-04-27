@@ -34,7 +34,6 @@ services:
       - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads
       - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
       - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
-      - ./convert-to-mp4.sh:/convert-to-mp4.sh
     ports:
       - 9091:9091
       - 49917:49917
