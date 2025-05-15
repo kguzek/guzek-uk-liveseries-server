@@ -38,7 +38,7 @@ type TorrentResponse<T extends Method> = T extends "session-get"
   : T extends "torrent-get"
     ? { arguments: { torrents: TorrentInfo[] } }
     : T extends "free-space"
-      ? { arguments: { "size-bytes": number } }
+      ? { arguments: { "size-bytes": number; path: string }; result?: string }
       : T extends "torrent-add"
         ? { arguments: { "torrent-added"?: TorrentInfo } }
         : T extends "torrent-remove"
@@ -174,11 +174,16 @@ export class TorrentClient {
     });
   }
 
-  /** @returns torrent info if created successfully, `false` if an error occurred, `true` if the torrent was already downloaded. */
-  async addTorrent(link: string): Promise<ConvertedTorrentInfo | boolean> {
+  private async ensureFreeSpace(): Promise<boolean> {
     const resFreeSpace = await this.fetch("free-space", {
       path: TORRENT_DOWNLOAD_PATH,
     });
+    if (resFreeSpace.result === "No such file or directory") {
+      logger.warn(
+        "Torrent download path does not exist yet, assuming there is enough free space.",
+      );
+      return true;
+    }
     const freeBytes = resFreeSpace.arguments["size-bytes"];
     if (!freeBytes) {
       logger.error("Invalid free space response", Object.keys(resFreeSpace));
@@ -200,7 +205,14 @@ export class TorrentClient {
       );
       return false;
     }
+    return true;
+  }
 
+  /** @returns torrent info if created successfully, `false` if an error occurred, `true` if the torrent was already downloaded. */
+  async addTorrent(link: string): Promise<ConvertedTorrentInfo | boolean> {
+    if (!(await this.ensureFreeSpace())) {
+      return false;
+    }
     const resTorrentAdd = await this.fetch("torrent-add", {
       filename: link,
       // TODO: check if this is necessary
