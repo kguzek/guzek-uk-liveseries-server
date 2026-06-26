@@ -113,6 +113,7 @@ export abstract class TorrentIndexer {
     }
     const res = await axios<FlaresolverrResponse>({
       url: `${FLARESOLVERR_URL}/v1`,
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       data: { cmd: "request.get", url, maxTimeout: 30000 },
     });
