@@ -9,7 +9,7 @@ services:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME:-liveseries}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
       interval: 5s
       timeout: 2s
       retries: 5
@@ -39,7 +39,8 @@ services:
       - 49917:49917
       - 49917:49917/udp
     healthcheck:
-      test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc" ]
+      test:
+        ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc"]
       interval: 5s
       timeout: 10s
       retries: 3
@@ -69,6 +70,7 @@ services:
       - LOG_TO_CONSOLE=true
       - APP_PORT=5017
       - SUBTITLE_CACHE_PATH=/subtitles
+      - FLARESOLVERR_URL
     volumes:
       - ./whitelist.json:/app/whitelist.json
       - ./.env:/app/.env
