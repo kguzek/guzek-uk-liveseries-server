@@ -15,6 +15,7 @@ export class Eztv extends TableStyledTorrentIndexer {
   SERVICE_URL_BASE = "https://eztvx.to/search/";
   COOKIE_HEADER = "layout=def_wlinks;";
   TABLE_HEADER_ROW = 2;
+  CLOUDFLARE_PROTECTED = true;
 
   fixResultProperties(result: SearchResult) {
     result.files = 1;

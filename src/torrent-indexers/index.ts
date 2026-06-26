@@ -4,7 +4,7 @@ import type { HTMLElement, Node } from "node-html-parser";
 import axios from "axios";
 import { parse } from "node-html-parser";
 
-import type { Episode, SearchResult } from "@/lib/types";
+import type { Episode, FlaresolverrResponse, SearchResult } from "@/lib/types";
 import { sanitiseShowName, serialiseEpisode } from "@/lib/liveseries";
 import { getLogger } from "@/lib/logger";
 
@@ -82,6 +82,7 @@ function isOutlier(value: number, mean: number, sigma: number) {
 export abstract class TorrentIndexer {
   abstract SERVICE_URL_BASE: string;
   COOKIE_HEADER: string = "";
+  CLOUDFLARE_PROTECTED = false;
 
   /** Optionally overridable method that returns the search URL using the prepared search query string. */
   getSearchUrl(query: string) {
@@ -90,6 +91,47 @@ export abstract class TorrentIndexer {
 
   /** An indexer-specific method which converts the HTML document obtained from the web request into a list of `SearchResult`s. */
   abstract parseSearchResults(html: HTMLElement): SearchResult[];
+
+  private async fetchPage(url: string): Promise<string | null> {
+    if (!this.CLOUDFLARE_PROTECTED) {
+      const res = await axios({
+        url,
+        headers: { Cookie: this.COOKIE_HEADER },
+      });
+      if (typeof res.data === "string") {
+        return res.data;
+      }
+      logger.error("Received non-string HTML content from torrent indexer:", res.data);
+      return null;
+    }
+    const FLARESOLVERR_URL = process.env.FLARESOLVERR_URL;
+    if (!FLARESOLVERR_URL) {
+      logger.error(
+        `The selected torrent indexer ${this.SERVICE_URL_BASE} is marked as Cloudflare-protected, but the environment variable FLARESOLVERR_URL is not set.`,
+      );
+      return null;
+    }
+    const res = await axios<FlaresolverrResponse>({
+      url: `${FLARESOLVERR_URL}/v1`,
+      headers: { "Content-Type": "application/json" },
+      data: { cmd: "request.get", url, maxTimeout: 30000 },
+    });
+    if (!res.data) {
+      logger.error(
+        `No response data from Cloudflare-protected indexer ${this.SERVICE_URL_BASE}:`,
+        res,
+      );
+      return null;
+    }
+    if (res.data.status !== "ok") {
+      logger.error(
+        `Failed to fetch page from Cloudflare-protected indexer ${this.SERVICE_URL_BASE}:`,
+        res.data,
+      );
+      return null;
+    }
+    return res.data.solution.response;
+  }
 
   /** Makes the request to the indexer and returns the response as HTML parsed by `node-html-parser`. */
   private async fetchRawResults(query: string) {
@@ -100,13 +142,7 @@ export abstract class TorrentIndexer {
     const url = this.getSearchUrl(query);
     let res;
     try {
-      res = await axios({
-        url,
-        method: "GET",
-        headers: {
-          Cookie: this.COOKIE_HEADER,
-        },
-      });
+      res = await this.fetchPage(url);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         logger.error(
@@ -118,11 +154,10 @@ export abstract class TorrentIndexer {
       }
       return null;
     }
-    if (typeof res.data !== "string") {
-      logger.error("Received non-string HTML content from torrent indexer:", res.data);
+    if (!res) {
       return null;
     }
-    return parse(res.data);
+    return parse(res);
   }
 
   /** Arbitrary algorithm to select the top torrent from a list of results.

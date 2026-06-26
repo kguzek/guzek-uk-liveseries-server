@@ -43,3 +43,48 @@ export type WhitelistRole = Static<typeof whitelistRoleSchema>;
 export type WhitelistUser = Static<typeof whitelistUserSchema>;
 export type Whitelist = Static<typeof whitelistSchema>;
 export type PayloadCmsUser = Static<typeof payloadUserSchema>;
+
+interface FlaresolverrResponseBase {
+  message: string;
+  startTimestamp: number;
+  endTimestamp: number;
+  verson: string;
+}
+
+interface FlaresolverrResponseError extends FlaresolverrResponseBase {
+  status: "error";
+}
+
+interface CookieDefinition {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires: number;
+  httpOnly: boolean;
+  secure: boolean;
+  session: boolean;
+  sameSite: string;
+  priority: string;
+  sameParty: boolean;
+  sourceScheme: string;
+  sourcePort: number;
+}
+
+interface FlaresolverrSolution {
+  url: string;
+  status: number;
+  response: string;
+  headers: Record<string, string>;
+  cookies: Array<CookieDefinition>;
+  userAgent: string;
+}
+
+interface FlaresolverrResponseSuccess extends FlaresolverrResponseBase {
+  status: "ok";
+  solution: FlaresolverrSolution;
+}
+
+export type FlaresolverrResponse =
+  | FlaresolverrResponseError
+  | FlaresolverrResponseSuccess;

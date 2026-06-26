@@ -9,12 +9,12 @@ services:
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME:-liveseries}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
       interval: 5s
       timeout: 2s
       retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${DATABASE_DATA_PATH}:/var/lib/postgresql
   transmission:
     image: registry.guzek.uk/liveseries/transmission
     container_name: transmission
@@ -32,21 +32,21 @@ services:
       - TR_WATCH_PATH=/watch
     volumes:
       - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads:z
-      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
-      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
+      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config:z
+      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch:z
     ports:
       - 9091:9091
       - 49917:49917
       - 49917:49917/udp
     healthcheck:
-      test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc" ]
+      test:
+        ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:9091/transmission/rpc"]
       interval: 5s
       timeout: 10s
       retries: 3
   migrations:
     image: registry.guzek.uk/liveseries/migrations
     container_name: migrations
-    restart: no
     depends_on:
       db:
         condition: service_healthy
@@ -69,6 +69,7 @@ services:
       - LOG_TO_CONSOLE=true
       - APP_PORT=5017
       - SUBTITLE_CACHE_PATH=/subtitles
+      - FLARESOLVERR_URL
     volumes:
       - ./whitelist.json:/app/whitelist.json
       - ./.env:/app/.env
@@ -76,5 +77,3 @@ services:
       - ${SUBTITLE_CACHE_PATH}:/subtitles
     ports:
       - "${APP_PORT:-5017}:5017"
-volumes:
-  postgres_data:
