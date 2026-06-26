@@ -14,7 +14,7 @@ services:
       timeout: 2s
       retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${DATABASE_DATA_PATH}:/var/lib/postgresql
   transmission:
     image: registry.guzek.uk/liveseries/transmission
     container_name: transmission
@@ -32,8 +32,8 @@ services:
       - TR_WATCH_PATH=/watch
     volumes:
       - ${TR_DOWNLOAD_PATH:-/var/lib/transmission-daemon/downloads}:/downloads:z
-      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config
-      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch
+      - ${TR_CONFIG_PATH:-/var/lib/transmission-daemon/config}:/config:z
+      - ${TR_WATCH_PATH:-/var/lib/transmission-daemon/watch}:/watch:z
     ports:
       - 9091:9091
       - 49917:49917
@@ -47,7 +47,6 @@ services:
   migrations:
     image: registry.guzek.uk/liveseries/migrations
     container_name: migrations
-    restart: no
     depends_on:
       db:
         condition: service_healthy
@@ -78,5 +77,3 @@ services:
       - ${SUBTITLE_CACHE_PATH}:/subtitles
     ports:
       - "${APP_PORT:-5017}:5017"
-volumes:
-  postgres_data:
