@@ -15,6 +15,7 @@ export class Extranet extends TableStyledTorrentIndexer {
     SEED: "seeders",
     LEECH: "leechers",
   } as const;
+  CLOUDFLARE_PROTECTED = true;
 
   fixResultProperties(result: SearchResult, columns: Node[]) {
     const firstColumn = columns[0];
