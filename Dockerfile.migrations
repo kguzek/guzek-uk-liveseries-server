@@ -1,6 +1,6 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
-RUN npm install --global npm@latest
+RUN npm install --global npm@12
 RUN npm install --global @clera-solutions/prisma-migrate-lite@1
 WORKDIR /app
 COPY prisma prisma

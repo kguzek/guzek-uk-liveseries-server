@@ -11,12 +11,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-to-registry:
+  push-to-registry:
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Checkout repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.1.2

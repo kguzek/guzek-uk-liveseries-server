@@ -4,6 +4,7 @@ set -Eeuo pipefail
 REGISTRY_HOSTNAME="${REGISTRY_HOSTNAME:-registry.guzek.uk}"
 PROJECT_NAME='liveseries'
 BUILDX_CACHE_DIR="${BUILDX_CACHE_DIR:-}"
+SCRIPT_ARG="${1:-}"
 
 for dockerfile in ./Dockerfile.*; do
   repository=${dockerfile#./Dockerfile.}
@@ -30,13 +31,15 @@ for dockerfile in ./Dockerfile.*; do
   cached_steps=$(grep -c "CACHED" <<< "$build_output" || true)
 
   echo -n "$cached_steps/$total_steps build steps were cached. "
-  if [[ "$cached_steps" -lt "$total_steps" || ${1:-} = "--force" ]]; then
+  if [[ "$SCRIPT_ARG" = "--dry-run" ]]; then
+    echo "Skipping push (dry run)."
+  elif [[ "$cached_steps" -lt "$total_steps" || "$SCRIPT_ARG" = "--force" ]]; then
     echo "Pushing image..."
     docker push "$tag"
     digest=$(docker image inspect "$tag" --format '{{index .RepoDigests 0}}' | grep "^$REGISTRY_HOSTNAME/")
     cosign sign --yes --new-bundle-format=false --use-signing-config=false "$digest"
   else
-    echo "Skipping push."
+    echo "Skipping push (image unchanged)."
   fi
   echo
 done
