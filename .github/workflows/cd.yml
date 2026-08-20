@@ -42,8 +42,8 @@ jobs:
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
-          path: /var/cache/.buildx-cache
+          path: /tmp/.buildx-cache
           key: ${{ runner.os }}-docker-buildx-cache
 
       - name: Run deploy script
-        run: ENABLE_BUILDX_CACHE=true ./deploy.sh
+        run: BUILDX_CACHE_DIR=/tmp/.buildx-cache ./deploy.sh
