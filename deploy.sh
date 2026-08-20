@@ -6,13 +6,28 @@ PROJECT_NAME='liveseries'
 BUILDX_CACHE_DIR="${BUILDX_CACHE_DIR:-}"
 SCRIPT_ARG="${1:-}"
 
+is_dry_run() {
+  [[ "$SCRIPT_ARG" = "--dry-run" ]]
+}
+
+if is_dry_run; then
+  echo "Starting build only (dry run option provided)..."
+else
+  echo "Starting build and push to registry..."
+fi
+
+if [[ -n "$BUILDX_CACHE_DIR" ]]; then
+  echo "Caching build artifacts in '$BUILDX_CACHE_DIR'"
+  mkdir -p "$BUILDX_CACHE_DIR"
+fi
+
+
 for dockerfile in ./Dockerfile.*; do
   repository=${dockerfile#./Dockerfile.}
   tag="$REGISTRY_HOSTNAME/$PROJECT_NAME/$repository:latest"
 
   build_image() {
-    if [[ -n $BUILDX_CACHE_DIR ]]; then
-      mkdir -p "$BUILDX_CACHE_DIR"
+    if [[ -n "$BUILDX_CACHE_DIR" ]]; then
       # Used for GitHub Actions caching
       docker buildx build \
         --cache-from=type=local,src="$BUILDX_CACHE_DIR" \
@@ -24,14 +39,15 @@ for dockerfile in ./Dockerfile.*; do
     fi
   }
 
-  echo "Building $repository..."
+  echo
+  echo "Building $PROJECT_NAME/$repository..."
   build_output=$(build_image)
 
   total_steps=$(grep -cE '^(RUN|WORKDIR|COPY)' "$dockerfile" || true)
   cached_steps=$(grep -c "CACHED" <<< "$build_output" || true)
 
-  echo -n "$cached_steps/$total_steps build steps were cached. "
-  if [[ "$SCRIPT_ARG" = "--dry-run" ]]; then
+  echo "$cached_steps/$total_steps build steps were cached. "
+  if is_dry_run; then
     echo "Skipping push (dry run)."
   elif [[ "$cached_steps" -lt "$total_steps" || "$SCRIPT_ARG" = "--force" ]]; then
     echo "Pushing image..."
@@ -41,5 +57,4 @@ for dockerfile in ./Dockerfile.*; do
   else
     echo "Skipping push (image unchanged)."
   fi
-  echo
 done
