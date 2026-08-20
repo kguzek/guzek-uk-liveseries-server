@@ -29,6 +29,10 @@ jobs:
         run: bun run types:check
         if: always()
 
+      - name: Shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        if: always()
+
       - name: Build application
         run: bun run build
         if: always()
