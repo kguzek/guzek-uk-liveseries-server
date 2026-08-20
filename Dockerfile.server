@@ -1,8 +1,8 @@
 FROM debian:12-slim AS build
 WORKDIR /app
 
-RUN apt update
-RUN apt install curl unzip -y
+RUN apt-get update
+RUN apt-get install -y curl unzip
 RUN curl https://bun.sh/install | bash
 
 COPY package.json bun.lock ./
