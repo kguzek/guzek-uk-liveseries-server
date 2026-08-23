@@ -30,7 +30,7 @@ jobs:
         if: always()
 
       - name: Shellcheck
-        uses: https://github.com/ludeeus/action-shellcheck@2.0.0
+        uses: github.com/ludeeus/action-shellcheck@2.0.0
         if: always()
 
       - name: Build application
